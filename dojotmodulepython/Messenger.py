@@ -5,7 +5,9 @@ from .kafka import TopicManager
 from .kafka import Consumer
 from .Config import config
 from .Auth import auth
+from .Logger import Log
 
+LOGGER = Log().color_log()
 
 class Messenger():
 
@@ -25,17 +27,15 @@ class Messenger():
         
 
         if ret:
-            print("Producer for module %s is ready" % self.instance_id)
-            print("Sending pending messages")
+            LOGGER.info("Producer for module %s is ready" % self.instance_id)
+            LOGGER.info("Sending pending messages")
             for msg in self.queued_messages:
                 self.publish(msg['subject'], msg['tenant'], msg['message'])
             queued_messages = []
         else:
-            print("Could not create producer")
-            # TODO: process.exit()
+            LOGGER.info("Could not create producer")
 
-        self.consumer = Consumer("history"+ str(uuid.uuid4()))
-        # self.consumer.start()
+        self.consumer = Consumer("dojotmodulepython"+ str(uuid.uuid4()))
 
         self.create_channel(config.dojot['subjects']['tenancy'], "rw", True)
 
@@ -48,15 +48,15 @@ class Messenger():
         self.on(config.dojot['subjects']['tenancy'], "message", self.process_new_tenant)
         try:
             ret_tenants = auth.get_tenants()
-            print("Retrieved list of tenants")
+            LOGGER.info("Retrieved list of tenants")
             for ten in ret_tenants:
-                print("Bootstraping tenant: %s" % ten)
+                LOGGER.info("Bootstraping tenant: %s" % ten)
                 self.process_new_tenant(config.dojot['management_service'], json.dumps({"tenant": ten}))
-                print("%s bootstrapped." % ten)
-                print("tenants: %s" % self.tenants)
-            print("Finished tenant boostrapping")
+                LOGGER.info("%s bootstrapped." % ten)
+                LOGGER.debug("tenants: %s" % self.tenants)
+            LOGGER.info("Finished tenant boostrapping")
         except Exception as error:
-            print("Could not get list of tenants: %s" % error)
+            LOGGER.warning("Could not get list of tenants: %s" % error)
         # TODO: try again
 
 
@@ -66,23 +66,23 @@ class Messenger():
             Process new tenant: bootstrap it for all subjects registered
             and emit an event
         """
-        print("Received message in tenanct subject.")
-        print("Tenant is: %s" % tenant)
-        print("Message is: %s" % msg)
+        LOGGER.info("Received message in tenanct subject.")
+        LOGGER.debug("Tenant is: %s" % tenant)
+        LOGGER.debug("Message is: %s" % msg)
         try:
             data = json.loads(msg)
 
         except Exception as error:
-            print("Data is not a valid JSON. Bailing out.")
-            print("Error is: %s" % error)
+            LOGGER.warning("Data is not a valid JSON. Bailing out.")
+            LOGGER.warning("Error is: %s" % error)
             return
 
         if("tenant" not in data):
-            print("Received message is invalid. Bailing out.")
+            LOGGER.info("Received message is invalid. Bailing out.")
             return
 
         if(data['tenant'] in self.tenants):
-            print("This tenant was already registered. Bailing out.")
+            LOGGER.info("This tenant was already registered. Bailing out.")
             return
 
         self.tenants.append(data['tenant'])
@@ -96,13 +96,13 @@ class Messenger():
         """
             Executes all callbacks related to that subject@event
         """
-        print("Emitting new event %s for subject %s@%s" %
+        LOGGER.info("Emitting new event %s for subject %s@%s" %
               (event, subject, tenant))
         if(subject not in self.event_callbacks):
-            print("No on is listening to subject %s events" % subject)
+            LOGGER.info("No on is listening to subject %s events" % subject)
             return
         if(event not in self.event_callbacks[subject]):
-            print("No one is listening to subject %s %s events" %
+            LOGGER.info("No one is listening to subject %s %s events" %
                   (subject, event))
             return
         for callback in self.event_callbacks[subject][event]:
@@ -115,7 +115,7 @@ class Messenger():
             Register new callbacks to be invoked when something happens to a subject
             The callback should have two parameters: tenant, data
         """
-        print("Registering new callback for subject %s and event %s" % (subject, event))
+        LOGGER.info("Registering new callback for subject %s and event %s" % (subject, event))
 
         if (subject not in self.event_callbacks):
             self.event_callbacks[subject] = dict()
@@ -135,7 +135,7 @@ class Messenger():
             topics.
         """
 
-        print("Creating channel for subject: %s" % subject)
+        LOGGER.info("Creating channel for subject: %s" % subject)
 
         associated_tenants = []
 
@@ -148,7 +148,7 @@ class Messenger():
             self.subjects[subject] = dict()
             self.subjects[subject]['mode'] = mode
 
-        print("tenants in create channel: %s" % self.tenants)
+        LOGGER.debug("tenants in create channel: %s" % self.tenants)
         for tenant in associated_tenants:
             self.__bootstrap_tenants(subject, tenant, mode, is_global)
 
@@ -156,80 +156,77 @@ class Messenger():
 
     def __bootstrap_tenants(self, subject, tenant, mode, is_global=False):
         """
-            TODO: write something
+            Giving a tenant, bootstrap it to all subjects registered
         """
 
-        print("Bootstraping tenant %s for subject %s" % (tenant,subject))
-        print("Global: %s, mode: %s" % (is_global, mode))
+        LOGGER.info("Bootstraping tenant %s for subject %s" % (tenant,subject))
+        LOGGER.debug("Global: %s, mode: %s" % (is_global, mode))
 
-        print("Requesting topic for %s@%s" % (subject,tenant))
+        LOGGER.info("Requesting topic for %s@%s" % (subject,tenant))
 
         try:
             ret_topic = self.topic_manager.get_topic(tenant, subject, config.data_broker['host'], is_global)
-            print(">>>>>>>>>>>> Got topics: %s" % (json.dumps(ret_topic)))
+            LOGGER.info("Got topics: %s" % (json.dumps(ret_topic)))
             if (ret_topic in self.topics):
-                print("Already have a topic for %s@%s" % (subject,tenant))
+                LOGGER.info("Already have a topic for %s@%s" % (subject,tenant))
                 return
 
-            print("Got topic for subject %s and tenant %s: %s" % (subject,tenant,ret_topic))
+            LOGGER.info("Got topic for subject %s and tenant %s: %s" % (subject,tenant,ret_topic))
             self.topics[ret_topic] = {"tenant": tenant, "subject": subject}
 
             if ("r" in mode):
-                print("Telling consumer to subscribe to new topic")
+                LOGGER.info("Telling consumer to subscribe to new topic")
                 self.consumer.subscribe(ret_topic, self.__process_kafka_messages)
                 if(len(self.topics) == 1):
-                    print(">>>>>>>> Starting consumer thread")
-                    self.consumer.start()
+                    LOGGER.debug("Starting consumer thread")
+                    try:
+                        self.consumer.start()
+                    except Exception as error:
+                        LOGGER.info("Something went wrong while starting thread: %s" % error)
                 else:
-                    print(">>>>>>>> Consumer thread is already started")
-                print("ok till here")
+                    LOGGER.debug("Consumer thread is already started")
 
             if("w" in mode):
-                print("Adding a producer topic.")
+                LOGGER.info("Adding a producer topic.")
                 if (subject not in self.producer_topics):
                     self.producer_topics[subject] = dict()
                 self.producer_topics[subject][tenant] = ret_topic
 
             
         except Exception as error:
-            print("Could not get topic: %s" % error)
+            LOGGER.warning("Could not get topic: %s" % error)
 
 
 
     def __process_kafka_messages(self, topic, messages):
         """
-            TODO: write something
+            This method is the callback that consumer will call when receives a message
         """
         
         if (topic not in self.topics):
-            print("Dont know why received message from this topic I dont have nothing to do with that.")
+            LOGGER.info("Nothing to do with messages of this topic")
             return
 
-        print("[Process kafka messages] Received messages: %s" % messages)
+        # LOGGER.info("[Process kafka messages] Received messages: %s" % messages)
         self.emit(self.topics[topic]['subject'], self.topics[topic]['tenant'], "message", messages)
 
     def publish(self, subject, tenant, message):
         """
-            TODO: write something
+            Publishes a message in kafka
         """
 
-        # if(self.producer.is_ready == False):
-        #     self.queued_messages.append({"subject": subject, "tenant": tenant, "message": message})
-        #     return
-
-        print("Trying to publish something on kafka, current producer-topics: %s" % self.producer_topics)
+        LOGGER.info("Trying to publish something on kafka, current producer-topics: %s" % self.producer_topics)
         
         if (subject not in self.producer_topics):
-            print("No producer was created for subject %s" % subject)
-            print("Discarding message %s" % message)
+            LOGGER.info("No producer was created for subject %s" % subject)
+            LOGGER.info("Discarding message %s" % message)
             return
 
         if(tenant not in self.producer_topics[subject]):
-            print("No producer was created for subject %s@%s. Maybe it was not registered?" % (subject,tenant))
-            print("Discarding message %s" % message)
+            LOGGER.info("No producer was created for subject %s@%s. Maybe it was not registered?" % (subject,tenant))
+            LOGGER.info("Discarding message %s" % message)
             return
 
         self.producer.produce(self.producer_topics[subject][tenant], message)
 
-        print("Published message: %s on topic %s" % (message,self.producer_topics[subject][tenant]))
-
+        LOGGER.info("Published message: %s on topic %s" % (message,self.producer_topics[subject][tenant]))

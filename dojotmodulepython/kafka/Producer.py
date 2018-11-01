@@ -1,9 +1,11 @@
 from kafka import KafkaProducer
 from kafka.errors import KafkaTimeoutError
+import json
 from ..Config import config
 from .TopicManager import TopicManager
-import json
+from ..Logger import Log
 
+LOGGER = Log().color_log()
 
 class Producer:
 
@@ -16,7 +18,7 @@ class Producer:
                                           bootstrap_servers=self.broker)
             return 1
         except AssertionError as error:
-            print("Ignoring assertion error on kafka producer %s" % error)
+            LOGGER.warning("Ignoring assertion error on kafka producer %s" % error)
             return 0
 
     def produce(self, topic, msg):
@@ -25,4 +27,4 @@ class Producer:
             self.producer.send(topic, msg)
             self.producer.flush()
         except KafkaTimeoutError:
-            print("Kafka timed out")
+            LOGGER.warning("Kafka timed out")

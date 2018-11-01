@@ -1,8 +1,10 @@
 import requests
-from .Config import config
 import base64
 import json
+from .Logger import Log
+from .Config import config
 
+LOGGER = Log().color_log()
 class Auth:
 
     def get_management_token(self, tenant):

@@ -1,6 +1,9 @@
 import requests
 from ..Auth import auth
 
+from ..Logger import Log
+
+LOGGER = Log().color_log()
 class TopicManager():
 
     def __init__(self):

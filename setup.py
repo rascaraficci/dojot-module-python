@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='dojotmodulepython',
-      version='0.49',
+      version='0.53',
       description='dojot module',
       url='http://github.com/matheuscampanhaf',
       author='bla',
