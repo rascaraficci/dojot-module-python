@@ -1,6 +1,6 @@
-from dojotmodulepython import Messenger, config
+from dojot.module import Messenger, config
 import time
-from dojotmodulepython.Logger import Log
+from dojot.module.Logger import Log
 
 
 LOGGER = Log().color_log()
