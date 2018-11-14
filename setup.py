@@ -8,5 +8,5 @@ setup(name='dojotmodulepython',
       author_email='bla@bla.com',
       license='MIT',
       packages=find_packages(exclude=['test']),
-      install_requires=['requests','kafka-python'],
+      install_requires=['requests','kafka-python', 'colorlog'],
       zip_safe=False)
