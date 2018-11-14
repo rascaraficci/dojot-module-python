@@ -19,7 +19,6 @@ class Messenger():
         self.topics = dict()
         self.producer_topics = dict()
         self.global_subjects = dict()
-        self.queued_messages = []
         self.instance_id = name + str(uuid.uuid4())
 
         self.producer = Producer()
@@ -28,10 +27,6 @@ class Messenger():
 
         if ret:
             LOGGER.info("Producer for module %s is ready" % self.instance_id)
-            LOGGER.info("Sending pending messages")
-            for msg in self.queued_messages:
-                self.publish(msg['subject'], msg['tenant'], msg['message'])
-            queued_messages = []
         else:
             LOGGER.info("Could not create producer")
 
