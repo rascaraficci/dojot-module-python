@@ -10,7 +10,7 @@ LOGGER = Log().color_log()
 class Producer:
 
     def __init__(self):
-        self.broker = [config.kafka['host']]
+        self.broker = config.kafka['producer']['metadata.broker.list'].split(',')
 
     def init(self):
         try:

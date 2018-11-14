@@ -4,9 +4,6 @@ class Config:
 
     def __init__(self):
         self.kafka = {
-            "address": os.environ.get('KAFKA_ADDRESS', "kafka"),
-            "port": os.environ.get('KAFKA_PORT', "9092"),
-            "host": os.environ.get('KAFKA_HOST',"kafka:9092"),
             "producer": {
                 "client.id": "kafka",
                 "metadata.broker.list": os.environ.get('KAFKA_HOSTS', "kafka:9092"),
@@ -25,15 +22,11 @@ class Config:
             }
         }
         self.data_broker = {
-            "host": os.environ.get('DATA_BROKER_HOST', "http://data-broker")
+            "url": os.environ.get('DATA_BROKER_URL', "http://data-broker")
         }
 
         self.auth = {
-            "host": os.environ.get('AUTH_HOST', "http://auth:5000")
-        }
-
-        self.device_manager = {
-            "host": os.environ.get('DEVICE_MANAGER_HOST', "http://device-manager:5000")
+            "url": os.environ.get('AUTH_URL', "http://auth:5000")
         }
 
         self.dojot = {

@@ -23,7 +23,7 @@ class Auth:
 
     def get_tenants(self):
 
-        url = config.auth['host'] + "/admin/tenants"
+        url = config.auth['url'] + "/admin/tenants"
         ret = requests.get(url, headers={'authorization': self.get_management_token(config.dojot['management_service'])})
         payload = ret.json()
         

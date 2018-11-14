@@ -14,21 +14,12 @@ class Consumer(threading.Thread):
     def __init__(self, group_id, name=None):
         threading.Thread.__init__(self)
         self.topics = []
-        self.broker = [config.kafka['host']]
+        self.broker = config.kafka['consumer']['metadata.broker.list'].split(',')
         self.group_id = group_id
         self.consumer = None
         LOGGER.info("Creating consumer on %s on group %s and topic %s" % (self.broker, self.group_id, self.topics))
         self.consumer = KafkaConsumer(bootstrap_servers=self.broker, group_id=self.group_id)
         LOGGER.info("Consumer created %s" % self.topics)
-
-    def wait_init(self):
-        init = False
-        while not init:
-            try:
-                init = True
-            except AssertionError as error:
-                LOGGER.info("Ignoring assertion error %s %s" % (self.topics,error))
-                time.sleep()
 
     def subscribe(self, topic, callback):
         try:
@@ -45,7 +36,6 @@ class Consumer(threading.Thread):
 
     def run(self):
         LOGGER.debug("Now running consumer for topics: %s" % self.topics)
-        self.wait_init()
         for msg in self.consumer:
             try:
                 self.callback(msg.topic, msg.value)

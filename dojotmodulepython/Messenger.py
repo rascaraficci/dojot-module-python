@@ -160,7 +160,7 @@ class Messenger():
         LOGGER.info("Requesting topic for %s@%s" % (subject,tenant))
 
         try:
-            ret_topic = self.topic_manager.get_topic(tenant, subject, config.data_broker['host'], is_global)
+            ret_topic = self.topic_manager.get_topic(tenant, subject, config.data_broker['url'], is_global)
             LOGGER.info("Got topics: %s" % (json.dumps(ret_topic)))
             if (ret_topic in self.topics):
                 LOGGER.info("Already have a topic for %s@%s" % (subject,tenant))
