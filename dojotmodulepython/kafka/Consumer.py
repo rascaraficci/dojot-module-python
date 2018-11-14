@@ -41,4 +41,3 @@ class Consumer(threading.Thread):
                 self.callback(msg.topic, msg.value)
             except Exception as error:
                 LOGGER.info("Data handler raised an unknown exception. Ignoring: %s" % error)
-

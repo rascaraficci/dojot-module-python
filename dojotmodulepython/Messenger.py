@@ -52,8 +52,6 @@ class Messenger():
             LOGGER.info("Finished tenant boostrapping")
         except Exception as error:
             LOGGER.warning("Could not get list of tenants: %s" % error)
-        # TODO: try again
-
 
 
     def process_new_tenant(self, tenant, msg):
@@ -134,7 +132,7 @@ class Messenger():
 
         associated_tenants = []
 
-        if(is_global == True):
+        if(is_global is True):
             associated_tenants = [config.dojot['management_service']]
             self.global_subjects[subject] = dict()
             self.global_subjects[subject]['mode'] = mode
