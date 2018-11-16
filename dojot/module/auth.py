@@ -13,13 +13,22 @@ class Auth:
     Class responsible for authentication mechanisms in dojot
     """
     def __init__(self, config):
+        """
+        Object initialization
+
+        :type config: Config
+        :param config: The configuration object.
+        """
         self.config = config
 
     def get_management_token(self, tenant):
         """
         Retrieves a token for management operations
+
         :type tenant: str
         :param tenant: the management tenant
+        :rtype: str
+        :return: The token
         """
 
         userinfo = {
@@ -37,7 +46,9 @@ class Auth:
     def get_tenants(self):
         """
         Retrieves all tenants
-        :return list of tenants
+
+        :rtype: list
+        :return: List of tenants
         """
         url = self.config.auth['url'] + "/admin/tenants"
         ret = requests.get(url, headers={'authorization': self.get_management_token(

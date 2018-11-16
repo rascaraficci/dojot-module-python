@@ -14,8 +14,51 @@ LOGGER = Log().color_log()
 
 class Messenger:
     """
-        Class responsible for sending and receiving messages through Kafka using
-        dojot subjects and tenants
+    Class responsible for sending and receiving messages through Kafka using
+    dojot subjects and tenants.
+
+    Using this class should be as easy as:
+
+    .. code-block:: python
+        :linenos:
+
+        from dojot.module import Messenger, Config
+        from dojot.module.logger import Log
+
+        LOGGER = Log().color_log()
+        def rcv_msg(tenant,data):
+            LOGGER.critical("rcvd msg from tenant: %s -> %s" % (tenant,data))
+
+        config = Config()
+        messenger = Messenger("Dojot-Snoop", config)
+        messenger.init()
+
+        # Create a channel using a default subject ``device-data``.
+        messenger.create_channel(config.dojot['subjects']['device_data'], "rw")
+
+        # Create a second channel using a particular subject ``device-status``
+        messenger.create_channel("service-status", "w")
+        
+        # Register callback to process incoming device data
+        messenger.on(config.dojot['subjects']['device_data'], "message", rcv_msg)
+
+        # Publish a message on ``service-status`` subject using ``dojot-management`` service.
+        messenger.publish("service-status", config.dojot['dojot-management'], "service X is up")
+    
+    
+    And that's all. 
+    
+    You can use an internal event publishing/subscribing mechanism in order to
+    send events to other parts of the code (using ``messenger.on()`` and
+    ``messenger.emit()`` functions) without actually send or receive any
+    messages to/from Kafka. An example:
+
+
+    .. code-block:: python
+
+        messenger.on("extra-subject", "subject-event", lambda tenant, data: print("Message received ({}): {}", (tenant, data)))
+        messenger.emit("extra-subject", "management-tenant", "subject-event", "message data")
+    
     """
     def __init__(self, name, config):
         self.config = config
@@ -46,6 +89,12 @@ class Messenger:
     def init(self):
         """
         Initializes the messenger and sets with all tenants
+
+        This library uses its own mechanism to discover new tenants and
+        subscribe to topics related to all configured subjects. That way the
+        user can rely only on calling ``messenger.on()`` functions and therefore
+        it will receive all messages from that subject related to different
+        tenants.
         """
         self.on(self.config.dojot['subjects']['tenancy'], "message", self.process_new_tenant)
         auth = Auth(self.config)
@@ -65,8 +114,13 @@ class Messenger:
 
     def process_new_tenant(self, tenant, msg):
         """
-            Process new tenant: bootstrap it for all subjects registered
-            and emit an event
+        Process new tenant: bootstrap it for all subjects registered and emit
+        an event
+
+        :type tenant: str
+        :param tenant: The tenant associated to the message (NOT NEW TENANT)
+        :type msg: dict
+        :param msg: The message just received with the new tenant..
         """
         LOGGER.info("Received message in tenanct subject.")
         LOGGER.debug("Tenant is: %s", tenant)
@@ -97,7 +151,19 @@ class Messenger:
 
     def emit(self, subject, tenant, event, data):
         """
-            Executes all callbacks related to that subject:event
+        Executes all callbacks related to that subject:event
+
+        :type subject: str
+        :param subject: The subject to be used when emitting this new event
+        :type tenant: str
+        :param tenant: The tenant to be used when emitting this new event
+        :type event: str
+        :param event: The event to be emitted. This is a arbitrary string.
+            The module itself will emit only ``message`` events (seldomly 
+            ``new-tenant`` also)
+        :type data: dict
+        :param data: The data to be emitted
+
         """
         LOGGER.info("Emitting new event %s for subject %s@%s", event, subject, tenant)
         if subject not in self.event_callbacks:
@@ -114,8 +180,15 @@ class Messenger:
 
     def on(self, subject, event, callback):
         """
-            Register new callbacks to be invoked when something happens to a subject
-            The callback should have two parameters: tenant, data
+        Register new callbacks to be invoked when something happens to a subject
+        The callback should have two parameters: tenant, data
+
+        :type subject: str
+        :param subject: The subject which this subscription is associated to.
+        :type event: str
+        :param event: The event of this subscription.
+        :param callback: The callback function. Its signature should be
+            (tenant: str, message:any) : void
         """
         LOGGER.info("Registering new callback for subject %s and event %s", subject, event)
 
@@ -133,8 +206,19 @@ class Messenger:
 
     def create_channel(self, subject, mode="r", is_global=False):
         """
-            Creates a new channel tha is related to tenants, subjects, and kafka
-            topics.
+        Creates a new channel tha is related to tenants, subjects, and kafka
+        topics.
+
+        :type subject: str
+        :param subject: The subject associated to this channel.
+
+        :type mode: str
+        :param mode: Channel type ("r" for only receiving messages, "w" for
+            only sending messages, "rw" for receiving and sending messages)
+        
+        :type is_global: bool
+        :param is_global: flag indicating whether this channel should be 
+            associated to a service or be global.
         """
 
         LOGGER.info("Creating channel for subject: %s", subject)
@@ -158,7 +242,17 @@ class Messenger:
 
     def __bootstrap_tenants(self, subject, tenant, mode, is_global=False):
         """
-            Giving a tenant, bootstrap it to all subjects registered
+        Given a tenant, bootstrap it to all subjects registered.
+
+        :type subject: str
+        :param subject: The subject being bootstrapped
+        :type tenant: str
+        :param tenant: the tenant being bootstrapped
+        :type mode: str
+        :param mode: R/W channel mode (send only, receive only or both)
+        :type is_global: bool
+        :param is_global: flag indicating whether this channel should be 
+            associated to a service or be global.
         """
 
         LOGGER.info("Bootstraping tenant %s for subject %s", tenant, subject)
@@ -203,7 +297,15 @@ class Messenger:
 
     def __process_kafka_messages(self, topic, messages):
         """
-            This method is the callback that consumer will call when receives a message
+        This method is the callback that consumer will call when receives a message.
+
+        This method is not supposed to be called by any module but as a callback
+        to kafka-python library.
+
+        :type topic: str
+        :param topic: The topic used to receive the message.
+        :type messages: str
+        :param messages: The messages received
         """
 
         if topic not in self.topics:
@@ -215,7 +317,14 @@ class Messenger:
 
     def publish(self, subject, tenant, message):
         """
-            Publishes a message in kafka
+        Publishes a message in kafka
+
+        :type subject: str
+        :param subject: The subject to be used when publish the data
+        :type tenant: str
+        :param tenant: The tenant associated to that message
+        :type message: str
+        :param messsage: The message to be published.
         """
 
         LOGGER.info("Trying to publish something on kafka, \

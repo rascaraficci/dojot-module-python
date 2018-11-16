@@ -33,6 +33,9 @@ class TopicManager():
 
         :type subject: str
         :param subject: The subject to be used
+
+        :rtype: str
+        :return: The key to be used
         """
         return tenant + ":" + subject
 
@@ -48,6 +51,9 @@ class TopicManager():
 
         :type global_val: bool
         :param global_val: True if this topic should be a global one.
+
+        :rtype: str
+        :return: The topic
         """
         key = self.get_key(tenant, subject)
 

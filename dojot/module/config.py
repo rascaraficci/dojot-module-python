@@ -8,24 +8,25 @@ import yaml
 class Config:
     """
     Main configuration class
+
     This class contains all needed configuration for this library
     """
     def __init__(self, config=None):
         """
         Config constructor
 
-        :type config: Config or None
+        :type config: dict or None
         :param config: A configuration dictionary. If set, all its attributes
-        will be set to this object.
+            will be set to this object.
 
-        Any top level key will overwrite the default configuration, i.e., setting
-        a `kafka` object to config param will overwrite all Kafka configuration.
-        An example of such dictionary is:
+        Any top level key will overwrite the default configuration, i.e.,
+        setting a `kafka` object to config param will overwrite all Kafka
+        configuration. An example of such dictionary is:
 
-        .. code-block:python
+        .. code-block:: python
 
-            {
-                "kafka" = {
+            config = {
+                "kafka" : {
                     "producer": {
                         "client.id": "kafka",
                         "metadata.broker.list": "kafka:9092",
@@ -43,15 +44,15 @@ class Config:
                         "metadata.broker.list": "kafka:9092"
                     }
                 }
-                "data_broker" = {
+                "data_broker" : {
                     "url": "http://data-broker"
                 }
 
-                "auth" = {
+                "auth" : {
                     "url": "http://auth:5000"
                 }
 
-                "dojot" = {
+                "dojot" : {
                     "management_service": "dojot-management",
                     "subjects": {
                         "tenancy": "dojot.tenancy",
@@ -61,12 +62,18 @@ class Config:
                 }
             }
 
-        .. warning: If set, the `dojot` section should be in sync with all
-        other modules. Otherwise this module won't work.
+        .. warning::
+        
+            If set, the `dojot` section should be in sync with all other
+            modules. Otherwise this module won't work properly.
 
-        .. note: The Kafka object is straight from librdkafka configuration,
-        separated into producer and consumer subobjects. For more information
-        about this configuration, you should check its documentation.
+        .. note::
+        
+            The Kafka object is straight from librdkafka configuration,
+            separated into producer and consumer subobjects. For more
+            information about this configuration, you should check its
+            documentation.
+
         """
         self.load_defaults()
         self.load_env()
@@ -81,7 +88,7 @@ class Config:
         """
         Load default configuration, which is:
 
-        .. code-block:yaml
+        .. code-block:: yaml
 
             kafka:
                 producer:
@@ -109,12 +116,18 @@ class Config:
                     devices: "dojot.device-manager.device"
                     device_data: "device-data"
 
-        .. warning: calling this function will overwrite any previously set
-        configuration. Also setting any configuration *after* Kafka is started
-        or any Messenger object is created will have no effect on them.
+        .. warning:: 
 
-        .. warning: If set, the `dojot` section should be in sync with all
-        other modules. Otherwise this module won't work.
+            Calling this function will overwrite any previously set
+            configuration in the created object. Also setting any configuration
+            *after* Kafka is started or any Messenger object is created will
+            have no effect on them.
+
+        .. warning:: 
+        
+            If set, the `dojot` section should be in sync with all other
+            modules. Otherwise this module won't work properly.
+
         """
         self.kafka = {
             "producer": {
@@ -155,11 +168,12 @@ class Config:
     def load_file(self, config_file):
         """
         Load configuration from a file. 
+
         Any top level key will overwrite the default configuration, i.e., having
         a `kafka` item in the file will overwrite all Kafka configuration.
         Such file should have the following sections:
 
-        .. code-block:yaml
+        .. code-block:: yaml
 
             kafka:
                 producer:
@@ -179,16 +193,25 @@ class Config:
                         devices: "dojot.device-manager.device"
                         device_data: "device-data"
 
-        .. warning: calling this function will overwrite any previously set
-        configuration. Also setting any configuration *after* Kafka is started
-        or any Messenger object is created will have no effect on them.
+        .. warning::
 
-        .. warning: If set, the `dojot` section should be in sync with all
-        other modules. Otherwise this module won't work.
+            Calling this function will overwrite any previously set
+            configuration in the created object. Also setting any configuration
+            *after* Kafka is started or any Messenger object is created will
+            have no effect on them.
+        
+        .. warning::
+        
+            If set, the `dojot` section should be in sync with all other
+            modules. Otherwise this module won't work properly.
 
-        .. note: The Kafka object is straight from librdkafka configuration,
-        separated into producer and consumer subobjects. For more information
-        about this configuration, you should check its documentation.
+        .. note::
+        
+            The Kafka object is straight from librdkafka configuration,
+            separated into producer and consumer subobjects. For more
+            information about this configuration, you should check its
+            documentation.
+
         """
         self.load_defaults()
         parsed_config = yaml.safe_load(open(config_file))
@@ -213,22 +236,22 @@ class Config:
         Any environment variable will overwrite the default configuration.
         Check load_defaults() function.
 
-        The list of envirnoment variables are:
+        The list of envirnoment variables is:
 
-        - KAFKA_HOSTS: a comma-separated list of hosts where an instance of Kafka
-          is running. This will affect the `metadata.broker.list` parameter for
-          both Kafka consumer and producer.
-        - KAFKA_GROUP_ID: The Kafka consumer group ID to be used.
-        - DATA_BROKER_URL: Where DataBroker service can be reached.
-        - AUTH_URL: Where Auth service can be reached.
-        - DOJOT_SERVICE_MANAGEMENT: service to be used when asking DataBroker
-          for management topics (such as tenancy-related topics)
-        - DOJOT_SUBJECT_TENANCY: Subject to be used when asking DataBroker for
-          tenancy topics.
-        - DOJOT_SUBJECT_DEVICES: Subject to be used when asking DataBroker for
-          device topics.
-        - DOJOT_SUBJECT_DEVICE_DATA: Subject to be used when asking DataBroker
-          for device data topics.
+        - ``KAFKA_HOSTS``: a comma-separated list of hosts where an instance
+          of Kafka is running. This will affect the `metadata.broker.list`
+          parameter for both Kafka consumer and producer.
+        - ``KAFKA_GROUP_ID``: The Kafka consumer group ID to be used.
+        - ``DATA_BROKER_URL``: Where DataBroker service can be reached.
+        - ``AUTH_URL``: Where Auth service can be reached.
+        - ``DOJOT_SERVICE_MANAGEMENT``: service to be used when asking
+          DataBroker for management topics (such as tenancy-related topics)
+        - ``DOJOT_SUBJECT_TENANCY``: Subject to be used when asking
+          DataBroker for tenancy topics.
+        - ``DOJOT_SUBJECT_DEVICES``: Subject to be used when asking
+          DataBroker for device topics.
+        - ``DOJOT_SUBJECT_DEVICE_DATA``: Subject to be used when asking
+          DataBroker for device data topics.
 
         """
 

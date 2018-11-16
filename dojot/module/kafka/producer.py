@@ -27,6 +27,9 @@ class Producer:
         Producer initialization
 
         This function will create the KafkaProducer.
+
+        :rtype: int
+        :return: 0 if producer is successfully created, -1 otherwise.
         """
         try:
             self.producer = KafkaProducer(value_serializer=lambda v: json.dumps(v).encode('utf-8'),

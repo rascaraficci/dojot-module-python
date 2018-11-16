@@ -1,5 +1,5 @@
 """
-Kafka consumer
+Kafka consumer module
 """
 
 import threading
@@ -20,7 +20,7 @@ class Consumer(threading.Thread):
         :type group_id: str
         :param group_id: The consumer group to which this consumer will belong
 
-        :type config: dojot.module.Config
+        :type config: Config
         :param config: The configuration object
 
         :type name: str

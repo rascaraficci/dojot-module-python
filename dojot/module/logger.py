@@ -13,7 +13,15 @@ class Log:
 
     def __init__(self, log_level=logging.DEBUG,
                  log_format="[%(log_color)s%(asctime)-8s%(reset)s] |%(log_color)s%(module)-8s%(reset)s| %(log_color)s%(levelname)s%(reset)s: %(log_color)s%(message)s%(reset)s", is_disabled=False):
-        
+        """
+        Object initializator
+
+        :param log_level: log level to be used at startup
+        :param log_format: how each log line should be printed
+        :param is_disabled: flag indicating whether the log should be initially
+            disabled.
+        """
+       
         #Disable all others modules logs
         log_config = {
             'version': 1,
