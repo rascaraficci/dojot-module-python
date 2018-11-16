@@ -11,9 +11,9 @@ class Log:
     Class for logging
     """
 
-    def __init__(self, LOG_LEVEL=logging.DEBUG,
-                 LOG_FORMAT="[%(log_color)s%(asctime)-8s%(reset)s] |%(log_color)s%(module)-8s%(reset)s| %(log_color)s%(levelname)s%(reset)s: %(log_color)s%(message)s%(reset)s", DISABLED=False):
-
+    def __init__(self, log_level=logging.DEBUG,
+                 log_format="[%(log_color)s%(asctime)-8s%(reset)s] |%(log_color)s%(module)-8s%(reset)s| %(log_color)s%(levelname)s%(reset)s: %(log_color)s%(message)s%(reset)s", is_disabled=False):
+        
         #Disable all others modules logs
         log_config = {
             'version': 1,
@@ -22,16 +22,16 @@ class Log:
 
         date_format = '%d/%m/%y - %H:%M:%S'
         config_log.dictConfig(log_config)
-        self.formatter = ColoredFormatter(LOG_FORMAT, date_format)
+        self.formatter = ColoredFormatter(log_format, date_format)
         self.log = logging.getLogger('dojomodulepython.' + __name__)
-        self.log.setLevel(LOG_LEVEL)
-        self.log.disabled = DISABLED
+        self.log.setLevel(log_level)
+        self.log.disabled = is_disabled
 
         if not getattr(self.log, 'handler_set', None):
             self.stream = logging.StreamHandler()
-            self.stream.setLevel(LOG_LEVEL)
+            self.stream.setLevel(log_level)
             self.stream.setFormatter(self.formatter)
-            self.log.setLevel(LOG_LEVEL)
+            self.log.setLevel(log_level)
             self.log.addHandler(self.stream)
             self.log.handler_set = True
 
