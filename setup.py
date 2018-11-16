@@ -29,7 +29,7 @@ setup(
     zip_safe=False,
     platforms=[any],
     install_requires=[
-        'requests==2.18.0',
+        'requests==2.20.0',
         'kafka-python==1.4.3',
         'colorlog==3.1.4',
         'pyaml==17.12.1'
@@ -37,7 +37,7 @@ setup(
     extras_require={
         "dev": [
             "pytest>=3",
-            "mock==2.0.0"
+            "pytest-cov==2.6.0"
         ]
     }
 )
