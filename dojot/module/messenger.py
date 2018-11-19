@@ -104,7 +104,7 @@ class Messenger:
             for ten in ret_tenants:
                 LOGGER.info("Bootstraping tenant: %s", ten)
                 self.process_new_tenant(
-                    self.config.dojot['management_service'], json.dumps({"tenant": ten}))
+                    self.config.dojot['management']["tenant"], json.dumps({"tenant": ten}))
                 LOGGER.info("%s bootstrapped.", ten)
                 LOGGER.debug("tenants: %s", self.tenants)
             LOGGER.info("Finished tenant boostrapping")
@@ -145,7 +145,7 @@ class Messenger:
         for sub in self.subjects:
             self.__bootstrap_tenants(sub, data['tenant'], self.subjects[sub]['mode'])
         self.emit(self.config.dojot['subjects']['tenancy'],
-                  self.config.dojot['management_service'], "new-tenant", data['tenant'])
+                  self.config.dojot['management']["tenant"], "new-tenant", data['tenant'])
 
 
 
@@ -226,7 +226,7 @@ class Messenger:
         associated_tenants = []
 
         if is_global is True:
-            associated_tenants = [self.config.dojot['management_service']]
+            associated_tenants = [self.config.dojot['management']["tenant"]]
             self.global_subjects[subject] = dict()
             self.global_subjects[subject]['mode'] = mode
         else:

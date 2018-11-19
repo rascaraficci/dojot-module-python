@@ -21,19 +21,17 @@ class Auth:
         """
         self.config = config
 
-    def get_management_token(self, tenant):
+    def get_management_token(self):
         """
         Retrieves a token for management operations
 
-        :type tenant: str
-        :param tenant: the management tenant
         :rtype: str
         :return: The token
         """
 
         userinfo = {
-            "username": self.config.dojot["management_service"],
-            "service": tenant
+            "username": self.config.dojot["management"]["user"],
+            "service": self.config.dojot["management"]["tenant"]
         }
 
         jwt = "{}.{}.{}".format(base64.b64encode("model".encode()).decode(),
@@ -51,8 +49,7 @@ class Auth:
         :return: List of tenants
         """
         url = self.config.auth['url'] + "/admin/tenants"
-        ret = requests.get(url, headers={'authorization': self.get_management_token(
-            self.config.dojot['management_service'])})
+        ret = requests.get(url, headers={'authorization': "Bearer " + self.get_management_token()})
         payload = ret.json()
 
         return payload['tenants']

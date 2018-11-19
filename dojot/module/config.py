@@ -53,7 +53,10 @@ class Config:
                 }
 
                 "dojot" : {
-                    "management_service": "dojot-management",
+                    "management": {
+                        "user" : "dojot-management",
+                        "tenant" : "dojot-management"
+                    },
                     "subjects": {
                         "tenancy": "dojot.tenancy",
                         "devices": "dojot.device-manager.device",
@@ -110,7 +113,9 @@ class Config:
             auth:
                 url: "http://auth:5000"
             dojot:
-                management_service: "dojot-management"
+                management: 
+                    user: "dojot-management"
+                    tenant: "dojot-management"
                 subjects:
                     tenancy: "dojot.tenancy"
                     devices: "dojot.device-manager.device"
@@ -156,7 +161,10 @@ class Config:
         }
 
         self.dojot = {
-            "management_service": "dojot-management",
+            "management": {
+                "user" : "dojot-management",
+                "tenant": "dojot-management"
+            },
             "subjects": {
                 "tenancy": "dojot.tenancy",
                 "devices": "dojot.device-manager.device",
@@ -187,7 +195,9 @@ class Config:
                 auth:
                     url: "http://auth:5000"
                 dojot:
-                    management_service: "dojot-management"
+                    management: 
+                        user: "dojot-management",
+                        tenant: "dojot-management"
                     subjects:
                         tenancy: "dojot.tenancy"
                         devices: "dojot.device-manager.device"
@@ -244,7 +254,9 @@ class Config:
         - ``KAFKA_GROUP_ID``: The Kafka consumer group ID to be used.
         - ``DATA_BROKER_URL``: Where DataBroker service can be reached.
         - ``AUTH_URL``: Where Auth service can be reached.
-        - ``DOJOT_SERVICE_MANAGEMENT``: service to be used when asking
+        - ``DOJOT_MANAGEMENT_TENANT``: tenant to be used when asking
+          DataBroker for management topics (such as tenancy-related topics)
+        - ``DOJOT_MANAGEMENT_USER``: user to be used when asking
           DataBroker for management topics (such as tenancy-related topics)
         - ``DOJOT_SUBJECT_TENANCY``: Subject to be used when asking
           DataBroker for tenancy topics.
@@ -269,8 +281,11 @@ class Config:
 
         self.auth["url"] = os.environ.get('AUTH_URL', self.auth["url"])
 
-        self.dojot["management_service"] = os.environ.get(
-            'DOJOT_SERVICE_MANAGEMENT', self.dojot["management_service"])
+        self.dojot["management"]["user"] = os.environ.get(
+            'DOJOT_MANAGEMENT_USER', self.dojot["management"]["user"])
+    
+        self.dojot["management"]["tenant"] = os.environ.get(
+            'DOJOT_MANAGEMENT_TENANT', self.dojot["management"]["tenant"])
 
         self.dojot["subjects"]["tenancy"] = os.environ.get(
             'DOJOT_SUBJECT_TENANCY', self.dojot["subjects"]["tenancy"])

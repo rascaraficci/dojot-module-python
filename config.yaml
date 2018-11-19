@@ -18,7 +18,9 @@ data_broker:
 auth:
   url: "http://172.22.0.18:5000"
 dojot:
-  management_service: "dojot-management"
+  management: 
+    user: "dojot-management"
+    tenant: "dojot-management"
   subjects:
     tenancy: "dojot.tenancy"
     devices: "dojot.device-manager.device"
