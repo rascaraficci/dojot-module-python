@@ -72,7 +72,7 @@ class TopicManager():
             payload = ret.json()
         except ValueError as error:
             LOGGER.error("Returned topic is not a JSON object: %s", error)
-            LOGGER.error("Returned data is: %s", ret.msg)
+            LOGGER.error("Returned data is: %s", ret.text)
             return None
 
         self.topics[key] = payload['topic']
