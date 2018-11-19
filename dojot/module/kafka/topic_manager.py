@@ -67,7 +67,7 @@ class TopicManager():
 
         url = self.broker + "/topic/" + subject + querystring
         ret = requests.get(url, headers={
-            'authorization': "Bearer " + self.auth.get_management_token(tenant)})
+            'authorization': "Bearer " + self.auth.get_management_token()})
         try:
             payload = ret.json()
         except ValueError as error:
