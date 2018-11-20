@@ -31,12 +31,11 @@ setup(
     install_requires=[
         'requests==2.20.0',
         'kafka-python==1.4.3',
-        'colorlog==3.1.4',
-        'pyaml==17.12.1'
+        'colorlog==3.1.4'
     ],
     extras_require={
         "dev": [
-            "pytest>=3",
+            "pytest==4.0.0",
             "pytest-cov==2.6.0"
         ]
     }
