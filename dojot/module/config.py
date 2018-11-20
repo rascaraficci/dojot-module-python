@@ -3,7 +3,6 @@ Configuration data module
 """
 
 import os
-import yaml
 
 class Config:
     """
@@ -171,73 +170,6 @@ class Config:
                 "device_data": "device-data"
             }
         }
-
-
-    def load_file(self, config_file):
-        """
-        Load configuration from a file. 
-
-        Any top level key will overwrite the default configuration, i.e., having
-        a `kafka` item in the file will overwrite all Kafka configuration.
-        Such file should have the following sections:
-
-        .. code-block:: yaml
-
-            kafka:
-                producer:
-                    client.id: "kafka"
-                    metadata.broker.list: "kafka:9092"
-                consumer:
-                    group.id: "data-broker"
-                    metadata.broker.list: "kafka:9092"
-                data_broker:
-                    url: "http://data-broker"
-                auth:
-                    url: "http://auth:5000"
-                dojot:
-                    management: 
-                        user: "dojot-management",
-                        tenant: "dojot-management"
-                    subjects:
-                        tenancy: "dojot.tenancy"
-                        devices: "dojot.device-manager.device"
-                        device_data: "device-data"
-
-        .. warning::
-
-            Calling this function will overwrite any previously set
-            configuration in the created object. Also setting any configuration
-            *after* Kafka is started or any Messenger object is created will
-            have no effect on them.
-        
-        .. warning::
-        
-            If set, the `dojot` section should be in sync with all other
-            modules. Otherwise this module won't work properly.
-
-        .. note::
-        
-            The Kafka object is straight from librdkafka configuration,
-            separated into producer and consumer subobjects. For more
-            information about this configuration, you should check its
-            documentation.
-
-        """
-        self.load_defaults()
-        parsed_config = yaml.safe_load(open(config_file))
-        print(f"Parsed config: {parsed_config}")
-
-        if "kafka" in parsed_config: print("kafka")
-        if "data_broker" in parsed_config: print("data_broker")
-        if "auth" in parsed_config: print("auth")
-        if "dojot" in parsed_config: print("dojot")
-
-        if "kafka" in parsed_config: self.kafka = parsed_config["kafka"]
-        if "data_broker" in parsed_config: self.data_broker = parsed_config["data_broker"]
-        if "auth" in parsed_config: self.auth = parsed_config["auth"]
-        if "dojot" in parsed_config: self.dojot = parsed_config["dojot"]
-
-        self.load_env()
 
     def load_env(self):
         """

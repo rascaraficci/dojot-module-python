@@ -11,7 +11,6 @@ def rcv_msg(tenant,data):
 
 def main():
     config = Config()
-    config.load_file("./config.yaml")
     messenger = Messenger("Dojot-Snoop", config)
     messenger.init()
     messenger.create_channel(config.dojot['subjects']['device_data'], "rw")
