@@ -19,14 +19,14 @@ sys.path.insert(0, os.path.abspath('../../dojot'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'dojot-module'
+project = 'dojot-module-python'
 copyright = '2018, Giovanni Curiel dos Santos'
 author = 'Giovanni Curiel dos Santos'
 
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '0.0.1'
+release = '0.0.1a1'
 
 
 # -- General configuration ---------------------------------------------------

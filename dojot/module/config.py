@@ -80,10 +80,14 @@ class Config:
         self.load_defaults()
         self.load_env()
         if config is not None:
-            if "kafka" in config: self.kafka = config["kafka"]
-            if "data_broker" in config: self.data_broker = config["data_broker"]
-            if "auth" in config: self.auth = config["auth"]
-            if "dojot" in config: self.dojot = config["dojot"]
+            if "kafka" in config: 
+                self.kafka = config["kafka"]
+            if "data_broker" in config: 
+                self.data_broker = config["data_broker"]
+            if "auth" in config: 
+                self.auth = config["auth"]
+            if "dojot" in config: 
+                self.dojot = config["dojot"]
 
 
     def load_defaults(self):
