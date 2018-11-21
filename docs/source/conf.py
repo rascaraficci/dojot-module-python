@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.abspath('../../dojot'))
 # -- Project information -----------------------------------------------------
 
 project = 'dojot-module-python'
+#pylint: disable=w0622
 copyright = '2018, Giovanni Curiel dos Santos'
 author = 'Giovanni Curiel dos Santos'
 
