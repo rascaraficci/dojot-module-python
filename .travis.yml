@@ -1,0 +1,10 @@
+language: python
+python:
+  - '3.6'
+before_install:
+  - pip install -e .[dev]
+  - pip install codecov
+script:
+  - pytest --cov=./dojot --cov-report=html
+after_success:
+  - codecov
