@@ -1,15 +1,17 @@
-from dojotmodulepython import Messenger, config
-import time
-from dojotmodulepython.Logger import Log
+"""
+Example for dojot.module.
+"""
+from dojot.module import Messenger, Config
+from dojot.module.logger import Log
 
 
 LOGGER = Log().color_log()
 def rcv_msg(tenant,data):
     LOGGER.critical("rcvd msg from tenant: %s -> %s" % (tenant,data))
 
-
 def main():
-    messenger = Messenger("Dojot-Snoop")
+    config = Config()
+    messenger = Messenger("Dojot-Snoop", config)
     messenger.init()
     messenger.create_channel(config.dojot['subjects']['device_data'], "rw")
     messenger.create_channel(config.dojot['subjects']['tenancy'], "rw")
