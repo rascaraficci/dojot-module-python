@@ -11,12 +11,12 @@ def test_consumer_init_ok():
             }
         })
         consumer = Consumer("sample-group-id", config, "sample-name")
-        assert(consumer is not None)
-        assert(consumer.topics == [])
-        assert(consumer.broker == ["k1", "k2", "k3"])
-        assert(consumer.group_id == "sample-group-id")
-        assert(consumer.callback is None)
-        assert(consumer.consumer is not None)
+        assert consumer is not None
+        assert consumer.topics == []
+        assert consumer.broker == ["k1", "k2", "k3"]
+        assert consumer.group_id == "sample-group-id"
+        assert consumer.callback is None
+        assert consumer.consumer is not None
         mockKafkaConsumer.assert_called_with(
             bootstrap_servers=["k1", "k2", "k3"], group_id="sample-group-id")
 
@@ -25,8 +25,8 @@ def test_consumer_subscribe_ok():
             consumer = Mock(subscribe=MagicMock()),
             callback="")
     Consumer.subscribe(mockSelf, "sample-topic", "callback")
-    assert(mockSelf.topics == ["sample-topic"])
-    assert(mockSelf.callback == "callback")
+    assert mockSelf.topics == ["sample-topic"]
+    assert mockSelf.callback == "callback"
     mockSelf.consumer.subscribe.assert_called_with(topics=["sample-topic"])
 
     mockSelf.consumer.subscribe = Mock(side_effect=IllegalStateError)
