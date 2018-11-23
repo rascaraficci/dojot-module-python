@@ -3,34 +3,34 @@ from dojot.module import Config
 
 def assert_config_creation(data=None):
     config = Config(data)
-    assert(config is not None)
-    assert(config.kafka is not None)
-    assert(config.data_broker is not None)
-    assert(config.auth is not None)
-    assert(config.dojot is not None)
+    assert config is not None
+    assert config.kafka is not None
+    assert config.data_broker is not None
+    assert config.auth is not None
+    assert config.dojot is not None
     return config
 
 def assert_kafka_config(config):
-    assert("producer" in config.kafka)
-    assert("client.id" in config.kafka["producer"])
-    assert("metadata.broker.list" in config.kafka["producer"])    
-    assert("consumer" in config.kafka)
-    assert("group.id" in config.kafka["consumer"])
-    assert("metadata.broker.list" in config.kafka["consumer"])
+    assert "producer" in config.kafka
+    assert "client.id" in config.kafka["producer"]
+    assert "metadata.broker.list" in config.kafka["producer"]
+    assert "consumer" in config.kafka
+    assert "group.id" in config.kafka["consumer"]
+    assert "metadata.broker.list" in config.kafka["consumer"]
 
 def assert_services_config(config):
-    assert("url" in config.data_broker)
-    assert("url" in config.auth)
+    assert "url" in config.data_broker
+    assert "url" in config.auth
 
 def assert_dojot_config(config):
-    assert("management" in config.dojot)
-    assert("user" in config.dojot["management"])
-    assert("tenant" in config.dojot["management"])
-    assert("subjects" in config.dojot)
+    assert "management" in config.dojot
+    assert "user" in config.dojot["management"]
+    assert "tenant" in config.dojot["management"]
+    assert "subjects" in config.dojot
 
-    assert("tenancy" in config.dojot["subjects"])
-    assert("devices" in config.dojot["subjects"])
-    assert("device_data" in config.dojot["subjects"])
+    assert "tenancy" in config.dojot["subjects"]
+    assert "devices" in config.dojot["subjects"]
+    assert "device_data" in config.dojot["subjects"]
 
 def assert_default_config(config):
     assert_kafka_config(config)
@@ -38,20 +38,20 @@ def assert_default_config(config):
     assert_dojot_config(config)
 
 def assert_extra_kafka_config(config):
-    assert("extra-config-p" in config.kafka["producer"])
-    assert("extra-data-producer" == config.kafka["producer"]["extra-config-p"])
-    assert("extra-config-c" in config.kafka["consumer"])
-    assert("extra-data-consumer" == config.kafka["consumer"]["extra-config-c"])
+    assert "extra-config-p" in config.kafka["producer"]
+    assert "extra-data-producer" == config.kafka["producer"]["extra-config-p"]
+    assert "extra-config-c" in config.kafka["consumer"]
+    assert "extra-data-consumer" == config.kafka["consumer"]["extra-config-c"]
 
 def assert_extra_services_config(config):
-    assert("extra-dbroker" in config.data_broker)
-    assert("data-dbroker" == config.data_broker["extra-dbroker"])
-    assert("extra-auth" in config.auth)
-    assert("data-auth" == config.auth["extra-auth"])
+    assert "extra-dbroker" in config.data_broker
+    assert "data-dbroker" == config.data_broker["extra-dbroker"]
+    assert "extra-auth" in config.auth
+    assert "data-auth" == config.auth["extra-auth"]
 
 def assert_extra_dojot_config(config):
-    assert("extra-subject" in config.dojot["subjects"])
-    assert("extra-subject-name" == config.dojot["subjects"]["extra-subject"])
+    assert "extra-subject" in config.dojot["subjects"]
+    assert "extra-subject-name" == config.dojot["subjects"]["extra-subject"]
 
 def test_default_config():
     config = assert_config_creation()

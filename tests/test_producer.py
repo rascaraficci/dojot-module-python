@@ -11,19 +11,19 @@ def test_producer_init_ok():
     })
 
     producer = Producer(config)
-    assert(producer.broker == ["k1", "k2", "k3"])
-    assert(producer.producer is None)
+    assert producer.broker == ["k1", "k2", "k3"]
+    assert producer.producer is None
 
 
 def test_producer_init():
     with patch.object(KafkaProducer, "__init__", return_value=None):
         mockSelf = Mock(broker="k1")
         ret = Producer.init(mockSelf)
-        assert(ret == 0)
+        assert ret == 0
     with patch.object(KafkaProducer, "__init__", side_effect=AssertionError):
         mockSelf = Mock(broker="k2")
         ret = Producer.init(mockSelf)
-        assert(ret == -1)
+        assert ret == -1
 
 def test_producer_produce():
     mockSelf = Mock(producer=Mock(send=Mock(), flush=Mock()))

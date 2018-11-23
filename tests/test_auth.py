@@ -15,7 +15,7 @@ def test_get_management_token_ok():
     )
     mockSelf = Mock(config=config)
     token = Auth.get_management_token(mockSelf)
-    assert(token is not None)
+    assert token is not None
 
 def test_get_tenants_ok():
     config = Mock(
@@ -40,5 +40,5 @@ def test_get_tenants_ok():
         mockReqGet.assert_called_with("http://sample-url/admin/tenants", headers = {
             "authorization": "Bearer 123"
         })
-        assert(tenants == "123")
+        assert tenants == "123"
     

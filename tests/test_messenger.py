@@ -25,7 +25,7 @@ def test_messenger():
         mockProducer.assert_called_once()
         mockConsumer.assert_called_once()
         mockProducerInit.assert_called_once()
-        assert(messenger.instance_id == "sample-messenger1234")
+        assert messenger.instance_id == "sample-messenger1234"
 
     with patch("dojot.module.kafka.Producer.init", return_value=10):
         # This should trigger an error
@@ -206,9 +206,9 @@ def test_messenger_on():
 
     # No registered subjects
     Messenger.on(mockSelf, "sample-subject", "sample-event", "callback-dummy")
-    assert("sample-subject" in mockSelf.event_callbacks)
-    assert("sample-event" in mockSelf.event_callbacks["sample-subject"])
-    assert("callback-dummy" in mockSelf.event_callbacks["sample-subject"]["sample-event"])
+    assert "sample-subject" in mockSelf.event_callbacks
+    assert "sample-event" in mockSelf.event_callbacks["sample-subject"]
+    assert "callback-dummy" in mockSelf.event_callbacks["sample-subject"]["sample-event"]
     mockSelf.create_channel.assert_called_once_with("sample-subject")
 
     # Registered a local subject
@@ -248,21 +248,21 @@ def test_messenger_bootstrap_tenants():
     mockSelf.topic_manager.get_topic.return_value = "dummy-topic"
     Messenger._Messenger__bootstrap_tenants(mockSelf, "sample-subject", "sample-tenant", "rw")
     mockSelf.topic_manager.get_topic.assert_called_once_with("sample-tenant", "sample-subject", False)
-    assert("dummy-topic" in mockSelf.topics)
+    assert "dummy-topic" in mockSelf.topics
     mockSelf.consumer.subscribe.assert_called_once_with("dummy-topic", ANY)
     mockSelf.consumer.start.assert_called_once()
-    assert("sample-subject" in mockSelf.producer_topics)
-    assert("sample-tenant" in mockSelf.producer_topics["sample-subject"])
+    assert "sample-subject" in mockSelf.producer_topics
+    assert "sample-tenant" in mockSelf.producer_topics["sample-subject"]
 
     # Topic manager returned none
     reset_scenario()
     mockSelf.topic_manager.get_topic.return_value = None
     Messenger._Messenger__bootstrap_tenants(mockSelf, "sample-subject", "sample-tenant", "rw")
     mockSelf.topic_manager.get_topic.assert_called_once_with("sample-tenant", "sample-subject", False)
-    assert("dummy-topic" not in mockSelf.topics)
+    assert "dummy-topic" not in mockSelf.topics
     mockSelf.consumer.subscribe.assert_not_called()
     mockSelf.consumer.start.assert_not_called()
-    assert("sample-subject" not in mockSelf.producer_topics)
+    assert "sample-subject" not in mockSelf.producer_topics
 
     # Already have such topic
     reset_scenario()
@@ -272,7 +272,7 @@ def test_messenger_bootstrap_tenants():
     mockSelf.topic_manager.get_topic.assert_called_once_with("sample-tenant", "sample-subject", False)
     mockSelf.consumer.subscribe.assert_not_called()
     mockSelf.consumer.start.assert_not_called()
-    assert("sample-subject" not in mockSelf.producer_topics)
+    assert "sample-subject" not in mockSelf.producer_topics
 
 def test_messenger_process_kafka_messages():
     mockSelf = Mock(
