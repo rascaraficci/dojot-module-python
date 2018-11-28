@@ -61,9 +61,16 @@ class Auth:
                 LOGGER.debug("Retrieving list of tenants from auth...")
                 ret = requests.get(
                     url, headers={'authorization': "Bearer " + self.get_management_token()})
-                payload = ret.json()
+
+                if ret.status_code is not 200:
+                    LOGGER.warning(f"Auth returned a non-200 response")
+                    LOGGER.warning(f"Code is {ret.status_code}.")
+                    LOGGER.warning(f"Message is {ret.text}")
+                else:
+                    payload = ret.json()
+                    LOGGER.debug("... list of tenants retrieved from auth.")
+                
                 retry_counter = 0
-                LOGGER.debug("... list of tenants retrieved from auth.")
             except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as connection_error:
                 LOGGER.warning(
                     f"Connection error retrieving list of tenants: {connection_error}")
@@ -75,6 +82,9 @@ class Auth:
                 # Nothing we can do about this.
                 LOGGER.error(
                     f"Received too many redirects while retrieving list of tenants: {redirects_error}")
+                retry_counter = 0
+            except ValueError as value_error:
+                LOGGER.error(f"Auth returned an invalid JSON: {value_error}")
                 retry_counter = 0
 
         if payload is None:
