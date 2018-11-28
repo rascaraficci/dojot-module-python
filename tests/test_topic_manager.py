@@ -22,7 +22,7 @@ def test_get_key():
     assert ret == "sample-tenant:sample-subject"
 
 def test_get_topic_ok():
-    mockAuth = Mock(get_management_token=Mock(return_value="sample-token"))
+    mockAuth = Mock(get_access_token=Mock(return_value="sample-token"))
     patchResponse = patch("requests.Response.json", return_value={"topic": "sample-topic"})
     patchReqGet = patch("requests.get", return_value=requests.Response)
     with patchResponse, patchReqGet as mockReqGet:
@@ -31,10 +31,10 @@ def test_get_topic_ok():
         assert ret == "sample-topic"
         mockReqGet.assert_called_once_with("http://sample-broker/topic/sample-subject",
                                 headers={"authorization": "Bearer sample-token"})
-
+        mockAuth.get_access_token.assert_called_once_with("sample-tenant")
 
 def test_get_topic_global():
-    mockAuth = Mock(get_management_token=Mock(return_value="sample-token-global"))
+    mockAuth = Mock(get_access_token=Mock(return_value="sample-token-global"))
     patchResponse = patch("requests.Response.json", return_value={"topic": "sample-topic-global"})
     patchReqGet = patch("requests.get", return_value=requests.Response)
     with patchResponse, patchReqGet as mockReqGet:
@@ -43,9 +43,10 @@ def test_get_topic_global():
         assert ret == "sample-topic-global"
         mockReqGet.assert_called_once_with("http://sample-broker/topic/sample-subject-global?global=true",
                                 headers={"authorization": "Bearer sample-token-global"})
+        mockAuth.get_access_token.assert_called_once_with("sample-tenant")
 
 def test_get_topic_value_error():
-    mockAuth = Mock(get_management_token=Mock(return_value="sample-token-error"))
+    mockAuth = Mock(get_access_token=Mock(return_value="sample-token-error"))
     patchResponseJson = patch("requests.Response.json", side_effect=ValueError("nope"))
     patchReqGet = patch("requests.get", return_value=requests.Response)
     with patchResponseJson, patchReqGet as mockReqGet:
@@ -54,7 +55,7 @@ def test_get_topic_value_error():
         assert ret is None
         mockReqGet.assert_called_once_with("http://sample-broker/topic/sample-subject-error",
                                 headers={"authorization": "Bearer sample-token-error"})
- 
+        mockAuth.get_access_token.assert_called_once_with("sample-tenant")
 
 def test_get_topic_with_topic():
     mockSelf = Mock(get_key=TopicManager.get_key, topics={"sample-tenant:sample-subject": "sample-stored-value"})

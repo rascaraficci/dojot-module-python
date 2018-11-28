@@ -17,6 +17,20 @@ def test_get_management_token_ok():
     token = Auth.get_management_token(mockSelf)
     assert token is not None
 
+def test_get_access_token_ok():
+    config = Mock(
+        dojot={
+            "management": { 
+                "user" : "management-user", 
+                "tenant" : "non-management-tenant"
+            }
+        }
+    )
+    mockSelf = Mock(config=config)
+    token = Auth.get_access_token(mockSelf, "non-management-tenant")
+    assert token is not None
+
+
 def test_get_tenants_ok():
     config = Mock(
         auth={
