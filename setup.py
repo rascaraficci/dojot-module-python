@@ -28,6 +28,11 @@ setup(
     include_package_data=True,
     zip_safe=False,
     platforms=[any],
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+        "Operating System :: OS Independent",
+    ],
     install_requires=[
         'requests==2.20.0',
         'kafka-python==1.4.3',
