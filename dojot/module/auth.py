@@ -42,6 +42,28 @@ class Auth:
 
         return jwt
 
+    def get_access_token(self, tenant):
+        """
+        Retrieves a token for normal operations associated to a particular
+        tenant.
+
+        :rtype: str
+        :return: The token
+        """
+
+        userinfo = {
+            "username": self.config.dojot["management"]["user"],
+            "service": tenant
+        }
+
+        jwt = "{}.{}.{}".format(base64.b64encode("model".encode()).decode(),
+                                base64.b64encode(json.dumps(
+                                    userinfo).encode()).decode(),
+                                base64.b64encode("signature".encode()).decode())
+
+        return jwt
+
+
     def get_tenants(self):
         """
         Retrieves all tenants
