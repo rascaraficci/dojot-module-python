@@ -21,6 +21,8 @@ def assert_kafka_config(config):
 def assert_services_config(config):
     assert "url" in config.data_broker
     assert "url" in config.auth
+    assert "timeout_sleep" in config.auth
+    assert "connection_retries" in config.auth
 
 def assert_dojot_config(config):
     assert "management" in config.dojot
@@ -79,6 +81,8 @@ def test_custom_config():
         },
         "auth": {
             "url": "localhost:5000",
+            "timeout_sleep": 5,
+            "connection_retries": 3,
             "extra-auth": "data-auth"
         }
     }
