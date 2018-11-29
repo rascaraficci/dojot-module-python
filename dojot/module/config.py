@@ -48,7 +48,9 @@ class Config:
                 }
 
                 "auth" : {
-                    "url": "http://auth:5000"
+                    "url": "http://auth:5000",
+                    "timeout_sleep": 5,
+                    "connection_retries": 3
                 }
 
                 "dojot" : {
@@ -115,6 +117,8 @@ class Config:
                 url: "http://data-broker"
             auth:
                 url: "http://auth:5000"
+                timeout_sleep: 5
+                connection_retries: 3
             dojot:
                 management: 
                     user: "dojot-management"
@@ -160,7 +164,9 @@ class Config:
         }
 
         self.auth = {
-            "url": "http://auth:5000"
+            "url": "http://auth:5000",
+            "timeout_sleep": 5,
+            "connection_retries": 3
         }
 
         self.dojot = {

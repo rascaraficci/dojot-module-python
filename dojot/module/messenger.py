@@ -94,22 +94,25 @@ class Messenger:
         subscribe to topics related to all configured subjects. That way the
         user can rely only on calling ``messenger.on()`` functions and therefore
         it will receive all messages from that subject related to different
-        tenants.
+        tenants.    
+
+        :raises UserWarning: When the list of tenants cannot be retrieved.
         """
         self.on(self.config.dojot['subjects']['tenancy'], "message", self.process_new_tenant)
         auth = Auth(self.config)
-        try:
-            ret_tenants = auth.get_tenants()
-            LOGGER.info("Retrieved list of tenants")
-            for ten in ret_tenants:
-                LOGGER.info("Bootstraping tenant: %s", ten)
-                self.process_new_tenant(
-                    self.config.dojot['management']["tenant"], json.dumps({"tenant": ten}))
-                LOGGER.info("%s bootstrapped.", ten)
-                LOGGER.debug("tenants: %s", self.tenants)
-            LOGGER.info("Finished tenant boostrapping")
-        except Exception as error:
-            LOGGER.warning("Could not get list of tenants: %s", error)
+        ret_tenants = auth.get_tenants()
+        if ret_tenants is None:
+            LOGGER.error("Cannot initialize messenger, as the list of tenants could not be retrieved.")
+            LOGGER.error("Bailing out.")
+            raise UserWarning("Cannot initialize messenger")
+        LOGGER.info("Retrieved list of tenants")
+        for ten in ret_tenants:
+            LOGGER.info("Bootstraping tenant: %s", ten)
+            self.process_new_tenant(
+                self.config.dojot['management']["tenant"], json.dumps({"tenant": ten}))
+            LOGGER.info("%s bootstrapped.", ten)
+            LOGGER.debug("tenants: %s", self.tenants)
+        LOGGER.info("Finished tenant boostrapping")
 
 
     def process_new_tenant(self, tenant, msg):

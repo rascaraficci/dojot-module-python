@@ -47,12 +47,23 @@ def test_messenger_init():
         }
     })
 
+    def reset_scenario():
+        mockMessengerProcess.reset_mock()
+    
     mockSelf = Mock(config=config, tenants=[])
     with patchMessengerOn, patchAuth, patchGetTenants, patchMessengerProcess as mockMessengerProcess:
         mockSelf.process_new_tenant = mockMessengerProcess
         Messenger.init(mockSelf)
         mockMessengerProcess.assert_any_call('sample-management-tenant', '{"tenant": "tenant1"}')
         mockMessengerProcess.assert_any_call('sample-management-tenant', '{"tenant": "tenant2"}')
+
+    reset_scenario()
+    patchGetTenants = patch("dojot.module.Auth.get_tenants", return_value=None)
+    mockSelf = Mock(config=config, tenants=[])
+    with pytest.raises(UserWarning), patchMessengerOn, patchAuth, patchGetTenants, patchMessengerProcess as mockMessengerProcess:
+        mockSelf.process_new_tenant = mockMessengerProcess
+        Messenger.init(mockSelf)
+        mockMessengerProcess.assert_not_called()
 
 
 def test_messenger_process_new_tenant():
