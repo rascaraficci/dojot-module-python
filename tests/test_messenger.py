@@ -2,7 +2,7 @@ import pytest
 import uuid
 import json
 from unittest.mock import Mock, patch, ANY
-from dojot.module import Messenger
+from dojot.module import Messenger, Auth
 
 
 def test_messenger():
@@ -34,9 +34,9 @@ def test_messenger():
 
 def test_messenger_init():
     patchMessengerOn = patch("dojot.module.Messenger.on")
-    patchAuth = patch("dojot.module.Auth.__init__", return_value=None)
+    # patchAuth = patch("dojot.module.Auth.__init__", return_value=None)
     patchMessengerProcess = patch("dojot.module.Messenger.process_new_tenant")
-    patchGetTenants = patch("dojot.module.Auth.get_tenants", return_value=["tenant1", "tenant2"])
+    # patchGetTenants = patch("dojot.module.Auth.get_tenants", return_value=["tenant1", "tenant2"])
 
     config = Mock(dojot={
         "subjects": {
@@ -50,17 +50,17 @@ def test_messenger_init():
     def reset_scenario():
         mockMessengerProcess.reset_mock()
     
-    mockSelf = Mock(config=config, tenants=[])
-    with patchMessengerOn, patchAuth, patchGetTenants, patchMessengerProcess as mockMessengerProcess:
+    mockSelf = Mock(config=config, tenants=[], auth=Mock(get_tenants=Mock(return_value=["tenant1", "tenant2"])))
+    with patchMessengerOn, patchMessengerProcess as mockMessengerProcess:
         mockSelf.process_new_tenant = mockMessengerProcess
         Messenger.init(mockSelf)
         mockMessengerProcess.assert_any_call('sample-management-tenant', '{"tenant": "tenant1"}')
         mockMessengerProcess.assert_any_call('sample-management-tenant', '{"tenant": "tenant2"}')
 
     reset_scenario()
-    patchGetTenants = patch("dojot.module.Auth.get_tenants", return_value=None)
-    mockSelf = Mock(config=config, tenants=[])
-    with pytest.raises(UserWarning), patchMessengerOn, patchAuth, patchGetTenants, patchMessengerProcess as mockMessengerProcess:
+    # patchGetTenants = patch("dojot.module.Auth.get_tenants", return_value=None)
+    mockSelf = Mock(config=config, tenants=[], auth=Mock(get_tenants=Mock(return_value=None)))
+    with pytest.raises(UserWarning), patchMessengerOn, patchMessengerProcess as mockMessengerProcess:
         mockSelf.process_new_tenant = mockMessengerProcess
         Messenger.init(mockSelf)
         mockMessengerProcess.assert_not_called()
