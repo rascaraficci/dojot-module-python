@@ -42,17 +42,20 @@ class Config:
                         "group.id": "my-module",
                         "metadata.broker.list": "kafka:9092"
                     }
-                }
+                },
                 "data_broker" : {
                     "url": "http://data-broker"
-                }
-
+                },
+                "device_manager": {
+                    "url": "http://device-manager:5000",
+                    "timeout_sleep": 5,
+                    "connection_retries": 3
+                },
                 "auth" : {
                     "url": "http://auth:5000",
                     "timeout_sleep": 5,
                     "connection_retries": 3
-                }
-
+                },
                 "dojot" : {
                     "management": {
                         "user" : "dojot-management",
@@ -86,6 +89,8 @@ class Config:
                 self.kafka = config["kafka"]
             if "data_broker" in config: 
                 self.data_broker = config["data_broker"]
+            if "device_manager" in config:
+                self.device_manager = config["device_manager"]
             if "auth" in config: 
                 self.auth = config["auth"]
             if "dojot" in config: 
@@ -115,6 +120,10 @@ class Config:
                     metadata.broker.list: "kafka:9092"
             data_broker:
                 url: "http://data-broker"
+            device_manager:
+                url: "http://device-manager:5000"
+                "timeout_sleep": 5
+                "connection_retries": 3
             auth:
                 url: "http://auth:5000"
                 timeout_sleep: 5
@@ -159,6 +168,13 @@ class Config:
                 "metadata.broker.list": "kafka:9092"
             }
         }
+
+        self.device_manager = {
+            "url": "http://device-manager:5000",
+            "timeout_sleep": 5,
+            "connection_retries": 3
+        }
+
         self.data_broker = {
             "url": "http://data-broker"
         }
@@ -195,6 +211,7 @@ class Config:
           parameter for both Kafka consumer and producer.
         - ``KAFKA_GROUP_ID``: The Kafka consumer group ID to be used.
         - ``DATA_BROKER_URL``: Where DataBroker service can be reached.
+        - ``DEVICE_MANAGER_URL``: URL to reach the device-manager service.
         - ``AUTH_URL``: Where Auth service can be reached.
         - ``DOJOT_MANAGEMENT_TENANT``: tenant to be used when asking
           DataBroker for management topics (such as tenancy-related topics)
@@ -220,6 +237,9 @@ class Config:
 
         self.data_broker["url"] = os.environ.get(
             'DATA_BROKER_URL', self.data_broker["url"])
+
+        self.device_manager["url"] = os.environ.get(
+            'DEVICE_MANAGER_URL', self.device_manager["url"])
 
         self.auth["url"] = os.environ.get('AUTH_URL', self.auth["url"])
 

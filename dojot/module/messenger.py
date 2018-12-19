@@ -2,8 +2,10 @@
 dojot messenger module
 """
 
+import time
 import json
 import uuid
+import requests
 from .kafka import Producer
 from .kafka import TopicManager
 from .kafka import Consumer
@@ -64,6 +66,7 @@ class Messenger:
         self.config = config
         self.topic_manager = TopicManager(config)
         self.event_callbacks = dict()
+        self.auth = Auth(self.config)
         self.tenants = []
         self.subjects = dict()
         self.topics = dict()
@@ -84,8 +87,6 @@ class Messenger:
 
         self.create_channel(self.config.dojot['subjects']['tenancy'], "rw", True)
 
-
-
     def init(self):
         """
         Initializes the messenger and sets with all tenants
@@ -99,8 +100,7 @@ class Messenger:
         :raises UserWarning: When the list of tenants cannot be retrieved.
         """
         self.on(self.config.dojot['subjects']['tenancy'], "message", self.process_new_tenant)
-        auth = Auth(self.config)
-        ret_tenants = auth.get_tenants()
+        ret_tenants = self.auth.get_tenants()
         if ret_tenants is None:
             LOGGER.error("Cannot initialize messenger, as the list of tenants could not be retrieved.")
             LOGGER.error("Bailing out.")
@@ -113,7 +113,6 @@ class Messenger:
             LOGGER.info("%s bootstrapped.", ten)
             LOGGER.debug("tenants: %s", self.tenants)
         LOGGER.info("Finished tenant boostrapping")
-
 
     def process_new_tenant(self, tenant, msg):
         """
@@ -150,8 +149,6 @@ class Messenger:
         self.emit(self.config.dojot['subjects']['tenancy'],
                   self.config.dojot['management']["tenant"], "new-tenant", data['tenant'])
 
-
-
     def emit(self, subject, tenant, event, data):
         """
         Executes all callbacks related to that subject:event
@@ -179,8 +176,6 @@ class Messenger:
         for callback in self.event_callbacks[subject][event]:
             callback(tenant, data)
 
-
-
     def on(self, subject, event, callback):
         """
         Register new callbacks to be invoked when something happens to a subject
@@ -205,7 +200,6 @@ class Messenger:
 
         if(subject not in self.subjects and subject not in self.global_subjects):
             self.create_channel(subject)
-
 
     def create_channel(self, subject, mode="r", is_global=False):
         """
@@ -240,8 +234,6 @@ class Messenger:
         LOGGER.debug("tenants in create channel: %s", self.tenants)
         for tenant in associated_tenants:
             self.__bootstrap_tenants(subject, tenant, mode, is_global)
-
-
 
     def __bootstrap_tenants(self, subject, tenant, mode, is_global=False):
         """
@@ -296,8 +288,6 @@ class Messenger:
         except Exception as error:
             LOGGER.warning("Could not get topic: %s", error)
 
-
-
     def __process_kafka_messages(self, topic, messages):
         """
         This method is the callback that consumer will call when receives a message.
@@ -349,3 +339,75 @@ class Messenger:
 
         LOGGER.info("Published message: %s on topic %s", message,
                     self.producer_topics[subject][tenant])
+
+    def request_device(self, tenant):
+        """
+        Get devices from the device-manager module
+
+        :type tenant: str
+        :param tenant: tenant name for the devices
+        :type page_num: integer
+        :param page_num: the number of the page that will be retrieved
+        """
+
+        has_next = True
+        page_num = 0
+
+        while (has_next):
+            extra_arg = "?page_num={}".format(page_num) if page_num > 0 else ""
+            url = self.config.device_manager["url"] + "/device" + extra_arg
+            retry_counter = self.config.device_manager["connection_retries"]
+            has_next = False
+
+            while retry_counter > 0:
+                try:
+                    LOGGER.debug("Retrieving list of devices from device-manager...")
+                    ret = requests.get(url, headers={'authorization': "Bearer " + self.auth.get_access_token(tenant)})
+
+                    if ret.status_code is not 200:
+                        LOGGER.warning(f"Device Manager returned a non-200 response")
+                        LOGGER.warning(f"Code is {ret.status_code}.")
+                        LOGGER.warning(f"Message is {ret.text}")
+                    else:
+                        payload = ret.json()
+
+                        for device in payload['devices']:
+
+                            data = {
+                                "event": "create",
+                                "data": device
+                            }
+
+                            self.emit(self.config.dojot["subjects"]["devices"], tenant, "message", json.dumps(data))
+
+                        if payload['pagination']['has_next']:
+                            has_next = True
+                            page_num = payload['pagination']['next_page']
+
+                        LOGGER.debug("List of devices retrieved from the device-manager.")
+                    
+                    retry_counter = 0
+                except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as connection_error:
+                    LOGGER.warning(
+                        f"Connection error retrieving list of tenants: {connection_error}")
+                    LOGGER.warning(f"Sleeping for {self.config.device_manager['timeout_sleep']} before trying again.")
+                    time.sleep(self.config.device_manager["timeout_sleep"])
+                    LOGGER.warning("Retrying...")
+                    retry_counter -= 1
+                except requests.exceptions.TooManyRedirects as redirects_error:
+                    LOGGER.error(
+                        f"Received too many redirects while retrieving list of tenants: {redirects_error}")
+                    retry_counter = 0
+                except ValueError as value_error:
+                    LOGGER.error(f"Auth returned an invalid JSON: {value_error}")
+                    retry_counter = 0
+
+    def generate_device_create_event_for_active_devices(self):
+        """
+        Generates device creation message for existing devices
+        """
+
+        LOGGER.debug('Requesting all active devices')
+
+        for tenant in self.tenants:
+            self.request_device(tenant)

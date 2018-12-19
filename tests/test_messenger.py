@@ -2,8 +2,8 @@ import pytest
 import uuid
 import json
 from unittest.mock import Mock, patch, ANY
-from dojot.module import Messenger
-
+from dojot.module import Messenger, Auth
+from requests.exceptions import ConnectionError, Timeout, TooManyRedirects
 
 def test_messenger():
     config = Mock(dojot={
@@ -34,9 +34,9 @@ def test_messenger():
 
 def test_messenger_init():
     patchMessengerOn = patch("dojot.module.Messenger.on")
-    patchAuth = patch("dojot.module.Auth.__init__", return_value=None)
+    # patchAuth = patch("dojot.module.Auth.__init__", return_value=None)
     patchMessengerProcess = patch("dojot.module.Messenger.process_new_tenant")
-    patchGetTenants = patch("dojot.module.Auth.get_tenants", return_value=["tenant1", "tenant2"])
+    # patchGetTenants = patch("dojot.module.Auth.get_tenants", return_value=["tenant1", "tenant2"])
 
     config = Mock(dojot={
         "subjects": {
@@ -50,17 +50,17 @@ def test_messenger_init():
     def reset_scenario():
         mockMessengerProcess.reset_mock()
     
-    mockSelf = Mock(config=config, tenants=[])
-    with patchMessengerOn, patchAuth, patchGetTenants, patchMessengerProcess as mockMessengerProcess:
+    mockSelf = Mock(config=config, tenants=[], auth=Mock(get_tenants=Mock(return_value=["tenant1", "tenant2"])))
+    with patchMessengerOn, patchMessengerProcess as mockMessengerProcess:
         mockSelf.process_new_tenant = mockMessengerProcess
         Messenger.init(mockSelf)
         mockMessengerProcess.assert_any_call('sample-management-tenant', '{"tenant": "tenant1"}')
         mockMessengerProcess.assert_any_call('sample-management-tenant', '{"tenant": "tenant2"}')
 
     reset_scenario()
-    patchGetTenants = patch("dojot.module.Auth.get_tenants", return_value=None)
-    mockSelf = Mock(config=config, tenants=[])
-    with pytest.raises(UserWarning), patchMessengerOn, patchAuth, patchGetTenants, patchMessengerProcess as mockMessengerProcess:
+    # patchGetTenants = patch("dojot.module.Auth.get_tenants", return_value=None)
+    mockSelf = Mock(config=config, tenants=[], auth=Mock(get_tenants=Mock(return_value=None)))
+    with pytest.raises(UserWarning), patchMessengerOn, patchMessengerProcess as mockMessengerProcess:
         mockSelf.process_new_tenant = mockMessengerProcess
         Messenger.init(mockSelf)
         mockMessengerProcess.assert_not_called()
@@ -344,3 +344,136 @@ def test_messenger_publish():
     }
     Messenger.publish(mockSelf, "sample-subject", "sample-tenant", "sample-message")
     mockSelf.producer.produce.assert_not_called()
+
+
+
+def test_messenger_request_device():
+    mockSelf = Mock(
+        config=Mock(
+            device_manager={
+                "url": "http://sample-url",
+                "connection_retries": 3,
+                "timeout_sleep": 10
+            },
+            dojot={
+                "subjects": {
+                    "devices": "devices-subject"
+                }
+            }
+        ),
+        auth=Mock(
+            get_access_token=Mock(
+                return_value="super-secret-token"
+            )
+        ),
+        emit=Mock()
+    )
+    mockResponse = Mock(
+        json=Mock(return_value={
+            "devices": ["device-1", "device-2"],
+            "pagination": {
+                "has_next": False
+            }
+        }),
+        text="there was an error, but I will not tell you.",
+        status_code=200
+    )
+
+    def reset_scenario():
+        mockSelf.emit.reset_mock()
+    
+    patchReqGet = patch("requests.get", return_value=mockResponse)
+    patchSleep = patch("time.sleep")
+    
+    with patchSleep, patchReqGet as mockReqRequest:
+        Messenger.request_device(mockSelf, "sample-tenant")
+        mockReqRequest.assert_called_with("http://sample-url/device", headers={
+            'authorization': "Bearer super-secret-token"
+        })
+        
+        mockSelf.emit.assert_any_call("devices-subject", "sample-tenant", "message", "{\"event\": \"create\", \"data\": \"device-1\"}")
+        mockSelf.emit.assert_any_call("devices-subject", "sample-tenant", "message", "{\"event\": \"create\", \"data\": \"device-2\"}")
+
+    reset_scenario()
+
+    mockResponse.status_code = 301
+    patchReqGet = patch("requests.get", return_value=mockResponse)
+     
+    with patchSleep, patchReqGet as mockReqRequest:
+        Messenger.request_device(mockSelf, "sample-tenant")
+        mockReqRequest.assert_called_with("http://sample-url/device", headers={
+            'authorization': "Bearer super-secret-token"
+        })
+        
+        mockSelf.emit.assert_not_called()
+
+    reset_scenario()
+
+    mockResponse.status_code = 200
+    mockResponse.json.return_value = {
+        "devices": ["device-1", "device-2"],
+        "pagination": {
+            "has_next": True,
+            "next_page": 199
+        }
+    }
+    mockResponse2 =  Mock(
+        json=Mock(return_value={
+            "devices": ["device-3", "device-4"],
+            "pagination": {
+                "has_next": False
+            }
+        }),
+        text="there was an error, but I will not tell you.",
+        status_code=200
+    )
+    patchReqGet = patch("requests.get", side_effect=[mockResponse, mockResponse2])
+     
+    with patchSleep, patchReqGet as mockReqRequest:
+        Messenger.request_device(mockSelf, "sample-tenant")
+        mockReqRequest.assert_any_call("http://sample-url/device", headers={
+            'authorization': "Bearer super-secret-token"
+        })
+        mockReqRequest.assert_any_call("http://sample-url/device?page_num=199", headers={
+            'authorization': "Bearer super-secret-token"
+        })
+        mockSelf.emit.assert_any_call("devices-subject", "sample-tenant", "message", "{\"event\": \"create\", \"data\": \"device-1\"}")
+        mockSelf.emit.assert_any_call("devices-subject", "sample-tenant", "message", "{\"event\": \"create\", \"data\": \"device-2\"}")
+        mockSelf.emit.assert_any_call("devices-subject", "sample-tenant", "message", "{\"event\": \"create\", \"data\": \"device-3\"}")
+        mockSelf.emit.assert_any_call("devices-subject", "sample-tenant", "message", "{\"event\": \"create\", \"data\": \"device-4\"}")
+
+
+    def assert_exceptions(patchSleep, patchReqGet):
+        with patchSleep, patchReqGet as mockReqRequest:
+            Messenger.request_device(mockSelf, "sample-tenant")
+            mockReqRequest.assert_any_call("http://sample-url/device", headers={
+                'authorization': "Bearer super-secret-token"
+            })
+            mockSelf.emit.assert_not_called()
+            
+    reset_scenario()
+    patchReqGet = patch("requests.get", side_effect=ConnectionError)
+    assert_exceptions(patchSleep, patchReqGet)   
+
+    reset_scenario()
+    patchReqGet = patch("requests.get", side_effect=Timeout)
+    assert_exceptions(patchSleep, patchReqGet)   
+        
+    reset_scenario()
+    patchReqGet = patch("requests.get", side_effect=TooManyRedirects)
+    assert_exceptions(patchSleep, patchReqGet)
+
+    reset_scenario()
+    patchReqGet = patch("requests.get", side_effect=ValueError)
+    assert_exceptions(patchSleep, patchReqGet)   
+
+def test_messenger_generate_device_events(): 
+    mockSelf = Mock(
+        tenants=["tenant-1", "tenant-2"],
+        request_device=Mock()
+    )
+
+    Messenger.generate_device_create_event_for_active_devices(mockSelf)
+    mockSelf.request_device.assert_any_call("tenant-1")
+    mockSelf.request_device.assert_any_call("tenant-2")
+    

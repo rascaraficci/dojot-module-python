@@ -7,6 +7,7 @@ def assert_config_creation(data=None):
     assert config.kafka is not None
     assert config.data_broker is not None
     assert config.auth is not None
+    assert config.device_manager is not None
     assert config.dojot is not None
     return config
 
@@ -23,6 +24,9 @@ def assert_services_config(config):
     assert "url" in config.auth
     assert "timeout_sleep" in config.auth
     assert "connection_retries" in config.auth
+    assert "url" in config.device_manager
+    assert "timeout_sleep" in config.device_manager
+    assert "connection_retries" in config.device_manager
 
 def assert_dojot_config(config):
     assert "management" in config.dojot
@@ -50,6 +54,8 @@ def assert_extra_services_config(config):
     assert "data-dbroker" == config.data_broker["extra-dbroker"]
     assert "extra-auth" in config.auth
     assert "data-auth" == config.auth["extra-auth"]
+    assert "extra-device-manager" in config.device_manager
+    assert "data-device-manager" == config.device_manager["extra-device-manager"]
 
 def assert_extra_dojot_config(config):
     assert "extra-subject" in config.dojot["subjects"]
@@ -84,6 +90,12 @@ def test_custom_config():
             "timeout_sleep": 5,
             "connection_retries": 3,
             "extra-auth": "data-auth"
+        },
+        "device_manager": { 
+            "url": "http://device-manager:5000", 
+            "timeout_sleep": 5, 
+            "connection_retries": 3,
+            "extra-device-manager": "data-device-manager"
         }
     }
 
