@@ -81,9 +81,11 @@ class Auth:
         while retry_counter > 0:
             try:
                 LOGGER.debug("Retrieving list of tenants from auth...")
+                LOGGER.debug(f"Remaining attempts: {retry_counter}")
                 ret = requests.get(
                     url, headers={'authorization': "Bearer " + self.get_management_token()})
 
+                LOGGER.debug(f"Got an answer from Auth.")
                 if ret.status_code is not 200:
                     LOGGER.warning(f"Auth returned a non-200 response")
                     LOGGER.warning(f"Code is {ret.status_code}.")
@@ -91,7 +93,7 @@ class Auth:
                 else:
                     payload = ret.json()
                     LOGGER.debug("... list of tenants retrieved from auth.")
-                
+
                 retry_counter = 0
             except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as connection_error:
                 LOGGER.warning(
