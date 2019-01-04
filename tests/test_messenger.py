@@ -485,4 +485,3 @@ def test_messenger_shutdown():
 
     Messenger.shutdown(mockSelf)
     mockSelf.consumer.stop.assert_called_once()
-

@@ -126,4 +126,3 @@ def test_consumer_stop():
 
     Consumer.stop(mockSelf)
     mockSelf.should_stop.set.assert_called_once()
-
