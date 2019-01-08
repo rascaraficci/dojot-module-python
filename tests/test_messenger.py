@@ -21,16 +21,11 @@ def test_messenger():
 
     with patchUuid, patchTopicManager, patchCreateCh as mockCreateCh, patchConsumer as mockConsumer, patchProducerInit as mockProducerInit, patchProducer as mockProducer:
         messenger = Messenger("sample-messenger", config)
-        mockCreateCh.assert_called_once_with("sample-tenancy-subject", "rw", True)
+        mockCreateCh.assert_called_once_with("sample-tenancy-subject", "r", True)
         mockProducer.assert_called_once()
-        mockConsumer.assert_called_once()
+        mockConsumer.assert_called()
         mockProducerInit.assert_called_once()
         assert messenger.instance_id == "sample-messenger1234"
-
-    with patch("dojot.module.kafka.Producer.init", return_value=10):
-        # This should trigger an error
-        pass
-
 
 def test_messenger_init():
     patchMessengerOn = patch("dojot.module.Messenger.on")
@@ -243,7 +238,8 @@ def test_messenger_bootstrap_tenants():
         topics={},
         consumer=Mock(
             subscribe=Mock(),
-            start=Mock()
+            start=Mock(),
+            topics=["sample-topic"]
         ),
         producer_topics={}
     )
