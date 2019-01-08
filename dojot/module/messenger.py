@@ -75,17 +75,21 @@ class Messenger:
         self.instance_id = name + str(uuid.uuid4())
 
         self.producer = Producer(config)
-        ret = self.producer.init()
+        self.producer.init()
 
+        # Bootstrapping tenancy topic.
+        # Using default "consumer" attribute so that we don't need to create
+        # special functions only to be able to consume messages from tenancy
+        # topics
+        # These consumer MUST belong to a unique group because all consumer
+        # SHOULD receive messages related to tenants.
+        self.consumer = Consumer("dojot-module-"+ str(uuid.uuid4()), config)
+        LOGGER.debug("Creating consumer for tenancy messages...")
+        self.create_channel(self.config.dojot['subjects']['tenancy'], "r", True)
+        LOGGER.debug("... consumer for tenancy messages was successfully created.")
 
-        if ret:
-            LOGGER.info("Producer for module %s is ready", self.instance_id)
-        else:
-            LOGGER.info("Could not create producer")
-
-        self.consumer = Consumer("dojotmodulepython"+ str(uuid.uuid4()), config)
-
-        self.create_channel(self.config.dojot['subjects']['tenancy'], "rw", True)
+        self.__tenancy_consumer = self.consumer
+        self.consumer = Consumer(name, config)
 
     def init(self):
         """
@@ -117,6 +121,7 @@ class Messenger:
 
     def shutdown(self):
         self.consumer.stop()
+        self.__tenancy_consumer.stop()
 
     def process_new_tenant(self, tenant, msg):
         """
@@ -275,7 +280,7 @@ class Messenger:
             if "r" in mode:
                 LOGGER.info("Telling consumer to subscribe to new topic")
                 self.consumer.subscribe(ret_topic, self.__process_kafka_messages)
-                if len(self.topics) == 1:
+                if len(self.consumer.topics) == 1:
                     LOGGER.info("Starting consumer thread...")
                     try:
                         self.consumer.start()
