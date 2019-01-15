@@ -4,6 +4,7 @@ Topic manager
 import requests
 from .. import Auth
 from ..logger import Log
+from ..http_requester import HttpRequester
 
 LOGGER = Log().color_log()
 class TopicManager():
@@ -22,6 +23,8 @@ class TopicManager():
         self.tenants = []
         self.broker = config.data_broker["url"]
         self.auth = Auth(config)
+        self.retry_counter = config.data_broker["connection_retries"]
+        self.timeout_sleep = config.data_broker["timeout_sleep"]
 
     @staticmethod
     def get_key(tenant, subject):
@@ -55,9 +58,12 @@ class TopicManager():
         :rtype: str
         :return: The topic
         """
+        LOGGER.debug(f"Getting a topic for {subject}@{tenant}...")
         key = self.get_key(tenant, subject)
 
         if key in self.topics:
+            LOGGER.debug(f"... got a cached entry.")
+            LOGGER.debug(f"Entry is {self.topics[key]}.")
             return self.topics[key]
 
         if global_val != "":
@@ -66,15 +72,10 @@ class TopicManager():
             querystring = ""
 
         url = self.broker + "/topic/" + subject + querystring
-        ret = requests.get(url, headers={
-            'authorization': "Bearer " + self.auth.get_access_token(tenant)})
-        try:
-            payload = ret.json()
-        except ValueError as error:
-            LOGGER.error("Returned topic is not a JSON object: %s", error)
-            LOGGER.error("Returned data is: %s", ret.text)
+        payload = HttpRequester.do_it(url, self.auth.get_access_token(tenant), self.retry_counter, self.timeout_sleep)
+
+        if payload:
+            self.topics[key] = payload['topic']
+            return self.topics[key]
+        else:
             return None
-
-        self.topics[key] = payload['topic']
-
-        return self.topics[key]
