@@ -19,7 +19,7 @@ class Producer:
         :type config: dojot.module.Config
         :param config: The configuration object
         """
-        self.broker = config.kafka['producer']['metadata.broker.list'].split(',')
+        self.broker = config.kafka['producer']['bootstrap_servers']
         self.producer = None
 
     def init(self):

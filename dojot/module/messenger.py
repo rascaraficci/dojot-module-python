@@ -64,6 +64,7 @@ class Messenger:
     """
     def __init__(self, name, config):
         self.config = config
+        self.name = name
         self.topic_manager = TopicManager(config)
         self.event_callbacks = dict()
         self.auth = Auth(self.config)
@@ -77,19 +78,6 @@ class Messenger:
         self.producer = Producer(config)
         self.producer.init()
 
-        # Bootstrapping tenancy topic.
-        # Using default "consumer" attribute so that we don't need to create
-        # special functions only to be able to consume messages from tenancy
-        # topics
-        # These consumer MUST belong to a unique group because all consumer
-        # SHOULD receive messages related to tenants.
-        self.consumer = Consumer("dojot-module-"+ str(uuid.uuid4()), config)
-        LOGGER.debug("Creating consumer for tenancy messages...")
-        self.create_channel(self.config.dojot['subjects']['tenancy'], "r", True)
-        LOGGER.debug("... consumer for tenancy messages was successfully created.")
-
-        self.__tenancy_consumer = self.consumer
-        self.consumer = Consumer(name, config)
 
     def init(self):
         """
@@ -103,6 +91,20 @@ class Messenger:
 
         :raises UserWarning: When the list of tenants cannot be retrieved.
         """
+        # Bootstrapping tenancy topic.
+        # Using default "consumer" attribute so that we don't need to create
+        # special functions only to be able to consume messages from tenancy
+        # topics
+        # These consumer MUST belong to a unique group because all consumer
+        # SHOULD receive messages related to tenants.
+        self.consumer = Consumer(self.config, "dojot-module-"+ str(uuid.uuid4()))
+        LOGGER.debug("Creating consumer for tenancy messages...")
+        self.create_channel(self.config.dojot['subjects']['tenancy'], "r", True)
+        LOGGER.debug("... consumer for tenancy messages was successfully created.")
+
+        self.__tenancy_consumer = self.consumer
+        self.consumer = Consumer(self.config, self.name)
+
         self.on(self.config.dojot['subjects']['tenancy'], "message", self.process_new_tenant)
         ret_tenants = self.auth.get_tenants()
         if ret_tenants is None:
@@ -120,6 +122,12 @@ class Messenger:
         LOGGER.info("Finished tenant boostrapping")
 
     def shutdown(self):
+        """
+        Shutdown this consumer.
+
+        This function will indicate to the consumer threads that they must stop.
+        Remember, though, that this might not occur right away.
+        """
         self.consumer.stop()
         self.__tenancy_consumer.stop()
 

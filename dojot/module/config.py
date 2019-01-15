@@ -28,7 +28,7 @@ class Config:
                 "kafka" : {
                     "producer": {
                         "client.id": "kafka",
-                        "metadata.broker.list": "kafka:9092",
+                        "bootstrap_servers": ["kafka:9092"],
                         "compression.codec": "gzip",
                         "retry.backoff.ms": 200,
                         "message.send.max.retries": 10,
@@ -39,13 +39,18 @@ class Config:
                         "dr_cb": True
                     },
                     "consumer": {
-                        "group.id": "my-module",
-                        "metadata.broker.list": "kafka:9092",
-                        "poll_timeout": 2000
+                        "group_id": "my-module",
+                        "bootstrap_servers": ["kafka:9092"]
+                    },
+                    "dojot": {
+                        "poll_timeout": 2000,
+                        "subscription_holdoff": 2.5
                     }
                 },
                 "data_broker" : {
-                    "url": "http://data-broker"
+                    "url": "http://data-broker",
+                    "timeout_sleep": 5,
+                    "connection_retries": 3
                 },
                 "device_manager": {
                     "url": "http://device-manager:5000",
@@ -91,6 +96,8 @@ class Config:
                     self.kafka["consumer"] = {**self.kafka["consumer"] , **config["kafka"]["consumer"]}
                 if "producer" in config["kafka"]:
                     self.kafka["producer"] = {**self.kafka["producer"] , **config["kafka"]["producer"]}
+                if "dojot" in config["kafka"]:
+                    self.kafka["dojot"] = {**self.kafka["dojot"] , **config["kafka"]["dojot"]}
             if "data_broker" in config:
                 self.data_broker = {**self.data_broker, **config["data_broker"]}
             if "device_manager" in config:
@@ -113,7 +120,8 @@ class Config:
             kafka:
                 producer:
                     client.id: "kafka"
-                    metadata.broker.list: "kafka:9092"
+                    bootstrap_servers:
+                     - "kafka:9092"
                     compression.codec: "gzip"
                     retry.backoff.ms: 200
                     message.send.max.retries: 10
@@ -123,11 +131,16 @@ class Config:
                     batch.num.messages: 1000000
                     dr_cb: true
                 consumer:
-                    group.id: "my-module"
-                    metadata.broker.list: "kafka:9092"
+                    group_id: "my-module"
+                    bootstrap_servers:
+                     - "kafka:9092"
+                dojot:
                     poll_timeout: 2000
+                    subscription_holdoff: 2.5
             data_broker:
                 url: "http://data-broker"
+                "timeout_sleep": 5
+                "connection_retries": 3
             device_manager:
                 url: "http://device-manager:5000"
                 "timeout_sleep": 5
@@ -161,7 +174,7 @@ class Config:
         self.kafka = {
             "producer": {
                 "client.id": "kafka",
-                "metadata.broker.list": "kafka:9092",
+                "bootstrap_servers": ["kafka:9092"],
                 "compression.codec": "gzip",
                 "retry.backoff.ms": 200,
                 "message.send.max.retries": 10,
@@ -172,10 +185,12 @@ class Config:
                 "dr_cb": True
             },
             "consumer": {
-                "group.id": "my-module",
-                "metadata.broker.list": "kafka:9092",
-                # particular to this library, not rd_kafka nor kafka itself
-                "poll_timeout": 2000
+                "group_id": "my-module",
+                "bootstrap_servers": ["kafka:9092"],
+            },
+            "dojot": {
+                "poll_timeout": 2000,
+                "subscription_holdoff": 2.5
             }
         }
 
@@ -186,7 +201,9 @@ class Config:
         }
 
         self.data_broker = {
-            "url": "http://data-broker"
+            "url": "http://data-broker",
+            "timeout_sleep": 5,
+            "connection_retries": 3
         }
 
         self.auth = {
@@ -217,9 +234,12 @@ class Config:
         The list of envirnoment variables is:
 
         - ``KAFKA_HOSTS``: a comma-separated list of hosts where an instance
-          of Kafka is running. This will affect the `metadata.broker.list`
+          of Kafka is running. This will affect the `bootstrap_servers`
           parameter for both Kafka consumer and producer.
         - ``KAFKA_GROUP_ID``: The Kafka consumer group ID to be used.
+        - ``DOJOT_KAFKA_SUBSCRIPTION_HOLDOFF``: Time to wait before performing any
+          subscription.
+        - ``DOJOT_KAFKA_POLL_TIMEOUT``: Time to wait for new messages in Kafka.
         - ``DATA_BROKER_URL``: Where DataBroker service can be reached.
         - ``DEVICE_MANAGER_URL``: URL to reach the device-manager service.
         - ``AUTH_URL``: Where Auth service can be reached.
@@ -236,14 +256,23 @@ class Config:
 
         """
 
-        self.kafka["producer"]["metadata.broker.list"] = os.environ.get(
-            'KAFKA_HOSTS', self.kafka["producer"]["metadata.broker.list"])
+        bootstrap_servers = os.environ.get('KAFKA_HOSTS', None)
+        if bootstrap_servers:
+            bootstrap_servers = bootstrap_servers.split(',')
+            self.kafka["producer"]["bootstrap_servers"] = bootstrap_servers
+            self.kafka["consumer"]["bootstrap_servers"] = bootstrap_servers
+        else:
+            self.kafka["producer"]["bootstrap_servers"] = self.kafka["producer"]["bootstrap_servers"]
+            self.kafka["consumer"]["bootstrap_servers"] = self.kafka["consumer"]["bootstrap_servers"]
 
-        self.kafka["consumer"]["metadata.broker.list"] = os.environ.get(
-            'KAFKA_HOSTS', self.kafka["consumer"]["metadata.broker.list"])
+        self.kafka["dojot"]["subscription_holdoff"] = int(os.environ.get(
+            'DOJOT_KAFKA_SUBSCRIPTION_HOLDOFF', self.kafka["dojot"]["subscription_holdoff"]))
 
-        self.kafka["consumer"]["group.id"] = os.environ.get(
-            'KAFKA_GROUP_ID', self.kafka["consumer"]["group.id"])
+        self.kafka["dojot"]["poll_timeout"] = int(os.environ.get(
+            'DOJOT_KAFKA_POLL_TIMEOUT', self.kafka["dojot"]["poll_timeout"]))
+
+        self.kafka["consumer"]["group_id"] = os.environ.get(
+            'KAFKA_GROUP_ID', self.kafka["consumer"]["group_id"])
 
         self.data_broker["url"] = os.environ.get(
             'DATA_BROKER_URL', self.data_broker["url"])
