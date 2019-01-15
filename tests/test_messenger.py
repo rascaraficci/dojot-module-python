@@ -12,53 +12,54 @@ def test_messenger():
         }
     })
 
-    patchCreateCh = patch("dojot.module.Messenger.create_channel")
-    patchConsumer = patch("dojot.module.kafka.Consumer.__init__", return_value=None)
-    patchProducerInit = patch("dojot.module.kafka.Producer.init", return_value=None)
-    patchProducer = patch("dojot.module.kafka.Producer.__init__", return_value=None)
-    patchUuid = patch("uuid.uuid4", return_value="1234")
-    patchTopicManager = patch("dojot.module.kafka.TopicManager.__init__", return_value=None)
+    patch_create_ch = patch("dojot.module.Messenger.create_channel")
+    patch_producer_init = patch("dojot.module.kafka.Producer.init", return_value=None)
+    patch_producer = patch("dojot.module.kafka.Producer.__init__", return_value=None)
+    patch_uuid = patch("uuid.uuid4", return_value="1234")
+    patch_topic_manager = patch("dojot.module.kafka.TopicManager.__init__", return_value=None)
 
-    with patchUuid, patchTopicManager, patchCreateCh as mockCreateCh, patchConsumer as mockConsumer, patchProducerInit as mockProducerInit, patchProducer as mockProducer:
+    with patch_uuid, patch_topic_manager, patch_create_ch, patch_producer_init as mock_producer_init, patch_producer as mock_producer:
         messenger = Messenger("sample-messenger", config)
-        mockCreateCh.assert_called_once_with("sample-tenancy-subject", "r", True)
-        mockProducer.assert_called_once()
-        mockConsumer.assert_called()
-        mockProducerInit.assert_called_once()
+        mock_producer.assert_called_once()
+        mock_producer_init.assert_called_once()
         assert messenger.instance_id == "sample-messenger1234"
 
 def test_messenger_init():
-    patchMessengerOn = patch("dojot.module.Messenger.on")
+    patch_messenger_on = patch("dojot.module.Messenger.on")
     # patchAuth = patch("dojot.module.Auth.__init__", return_value=None)
-    patchMessengerProcess = patch("dojot.module.Messenger.process_new_tenant")
+    patch_messenger_process = patch("dojot.module.Messenger.process_new_tenant")
+    patch_consumer = patch("dojot.module.kafka.Consumer.__init__", return_value=None)
     # patchGetTenants = patch("dojot.module.Auth.get_tenants", return_value=["tenant1", "tenant2"])
 
     config = Mock(dojot={
-        "subjects": {
-            "tenancy": "sample-tenancy-subject"
-        },
-        "management": {
-            "tenant": "sample-management-tenant"
-        }
-    })
+        "subjects": {"tenancy": "sample-tenancy-subject"},
+        "management": {"tenant": "sample-management-tenant"}
+    },
+    kafka={
+        "dojot": {"poll_timeout": 1, "subscription_holdoff": 1},
+        "consumer": {},
+        "producer": {}
+    }
+    )
 
     def reset_scenario():
-        mockMessengerProcess.reset_mock()
+        mock_messenger_process.reset_mock()
 
-    mockSelf = Mock(config=config, tenants=[], auth=Mock(get_tenants=Mock(return_value=["tenant1", "tenant2"])))
-    with patchMessengerOn, patchMessengerProcess as mockMessengerProcess:
-        mockSelf.process_new_tenant = mockMessengerProcess
-        Messenger.init(mockSelf)
-        mockMessengerProcess.assert_any_call('sample-management-tenant', '{"tenant": "tenant1"}')
-        mockMessengerProcess.assert_any_call('sample-management-tenant', '{"tenant": "tenant2"}')
+    mock_self = Mock(config=config, tenants=[], auth=Mock(get_tenants=Mock(return_value=["tenant1", "tenant2"])))
+    with patch_messenger_on, patch_consumer as mock_consumer, patch_messenger_process as mock_messenger_process:
+        mock_self.process_new_tenant = mock_messenger_process
+        Messenger.init(mock_self)
+        mock_consumer.assert_called()
+        mock_messenger_process.assert_any_call('sample-management-tenant', '{"tenant": "tenant1"}')
+        mock_messenger_process.assert_any_call('sample-management-tenant', '{"tenant": "tenant2"}')
 
     reset_scenario()
     # patchGetTenants = patch("dojot.module.Auth.get_tenants", return_value=None)
-    mockSelf = Mock(config=config, tenants=[], auth=Mock(get_tenants=Mock(return_value=None)))
-    with pytest.raises(UserWarning), patchMessengerOn, patchMessengerProcess as mockMessengerProcess:
-        mockSelf.process_new_tenant = mockMessengerProcess
-        Messenger.init(mockSelf)
-        mockMessengerProcess.assert_not_called()
+    mock_self = Mock(config=config, tenants=[], auth=Mock(get_tenants=Mock(return_value=None)))
+    with pytest.raises(UserWarning), patch_messenger_on, patch_messenger_process as mock_messenger_process:
+        mock_self.process_new_tenant = mock_messenger_process
+        Messenger.init(mock_self)
+        mock_messenger_process.assert_not_called()
 
 
 def test_messenger_process_new_tenant():
@@ -71,7 +72,7 @@ def test_messenger_process_new_tenant():
         }
     })
 
-    mockSelf = Mock(
+    mock_self = Mock(
         tenants=[],
         subjects={},
         config=config,
@@ -79,18 +80,18 @@ def test_messenger_process_new_tenant():
         emit=Mock())
 
     def reset_scenario():
-        mockSelf._Messenger__bootstrap_tenants.reset_mock()
-        mockSelf.emit.reset_mock()
-        mockSelf.tenants = []
-        mockSelf.subjects = {}
+        mock_self._Messenger__bootstrap_tenants.reset_mock()
+        mock_self.emit.reset_mock()
+        mock_self.tenants = []
+        mock_self.subjects = {}
 
     # Happy day route, no registered subjects
     reset_scenario()
-    Messenger.process_new_tenant(mockSelf,
+    Messenger.process_new_tenant(mock_self,
         "sample-tenant",
         '{"tenant": "sample-tenant"}')
-    mockSelf._Messenger__bootstrap_tenants.assert_not_called()
-    mockSelf.emit.assert_called_once_with(
+    mock_self._Messenger__bootstrap_tenants.assert_not_called()
+    mock_self.emit.assert_called_once_with(
         "sample-tenancy-subject",
         "sample-management-tenant",
         "new-tenant",
@@ -98,18 +99,18 @@ def test_messenger_process_new_tenant():
 
     # Happy day route, one registered subject
     reset_scenario()
-    mockSelf.subjects = {
+    mock_self.subjects = {
         "sample-subject": {
             "mode": "sample-subject-mode"
         }
     }
-    Messenger.process_new_tenant(mockSelf,
+    Messenger.process_new_tenant(mock_self,
         "sample-tenant",
         '{"tenant": "sample-tenant"}')
-    mockSelf._Messenger__bootstrap_tenants.assert_called_once_with("sample-subject",
+    mock_self._Messenger__bootstrap_tenants.assert_called_once_with("sample-subject",
         "sample-tenant",
         "sample-subject-mode")
-    mockSelf.emit.assert_called_once_with(
+    mock_self.emit.assert_called_once_with(
         "sample-tenancy-subject",
         "sample-management-tenant",
         "new-tenant",
@@ -118,86 +119,86 @@ def test_messenger_process_new_tenant():
 
     # Invalid payload
     reset_scenario()
-    Messenger.process_new_tenant(mockSelf,
+    Messenger.process_new_tenant(mock_self,
         "sample-tenant",
         'wrong-payload')
-    mockSelf._Messenger__bootstrap_tenants.assert_not_called()
-    mockSelf.emit.assert_not_called()
+    mock_self._Messenger__bootstrap_tenants.assert_not_called()
+    mock_self.emit.assert_not_called()
 
 
     # Missing tenant in data
     reset_scenario()
-    Messenger.process_new_tenant(mockSelf,
+    Messenger.process_new_tenant(mock_self,
         "sample-tenant",
         '{"key" : "not-expected"}')
-    mockSelf._Messenger_bootstrap_tenants.assert_not_called()
-    mockSelf.emit.assert_not_called()
+    mock_self._Messenger_bootstrap_tenants.assert_not_called()
+    mock_self.emit.assert_not_called()
 
     # Tenant already bootstrapped
     reset_scenario()
-    mockSelf.tenants = ["sample-tenant"]
-    Messenger.process_new_tenant(mockSelf,
+    mock_self.tenants = ["sample-tenant"]
+    Messenger.process_new_tenant(mock_self,
         "sample-tenant",
         '{"tenant": "sample-tenant"}')
-    mockSelf._Messenger__bootstrap_tenants.assert_not_called()
-    mockSelf.emit.assert_not_called()
+    mock_self._Messenger__bootstrap_tenants.assert_not_called()
+    mock_self.emit.assert_not_called()
 
 def test_messenger_emit():
 
-    mockSelf = Mock(
+    mock_self = Mock(
         event_callbacks={}
     )
 
-    mockCallback = Mock()
+    mock_callback = Mock()
 
     def reset_scenario():
-        mockSelf.event_callbacks = {
+        mock_self.event_callbacks = {
             "registered-subject": {
-                "registered-event": [mockCallback]
+                "registered-event": [mock_callback]
             }
         }
 
     # No registered subject nor event
     reset_scenario()
-    Messenger.emit(mockSelf,
+    Messenger.emit(mock_self,
         "sample-subject",
         "sample-tenant",
         "sample-event",
         "sample-data")
-    mockCallback.assert_not_called()
+    mock_callback.assert_not_called()
 
 
     # Registered subject, but not event
     reset_scenario()
-    Messenger.emit(mockSelf,
+    Messenger.emit(mock_self,
         "registered-subject",
         "sample-tenant",
         "sample-event",
         "sample-data")
-    mockCallback.assert_not_called()
+    mock_callback.assert_not_called()
 
     # Not registered subject, but registered event
     reset_scenario()
-    Messenger.emit(mockSelf,
+    Messenger.emit(mock_self,
         "sample-subject",
         "sample-tenant",
         "registered-event",
         "sample-data")
-    mockCallback.assert_not_called()
+    mock_callback.assert_not_called()
 
     # Registered subject and event
     reset_scenario()
-    Messenger.emit(mockSelf,
+    Messenger.emit(mock_self,
         "registered-subject",
         "sample-tenant",
         "registered-event",
         "sample-data")
-    mockCallback.assert_called_once_with("sample-tenant", "sample-data")
+    mock_callback.assert_called_once_with("sample-tenant", "sample-data")
 
 
 def test_messenger_on():
 
-    mockSelf = Mock(
+    mock_self = Mock(
         event_callbacks={},
         create_channel=Mock(),
         subjects={},
@@ -205,33 +206,33 @@ def test_messenger_on():
     )
 
     def reset_scenario():
-        mockSelf.event_callbacks = {}
-        mockSelf.subjects = {}
-        mockSelf.global_subjects = {}
-        mockSelf.create_channel.reset_mock()
+        mock_self.event_callbacks = {}
+        mock_self.subjects = {}
+        mock_self.global_subjects = {}
+        mock_self.create_channel.reset_mock()
 
     # No registered subjects
-    Messenger.on(mockSelf, "sample-subject", "sample-event", "callback-dummy")
-    assert "sample-subject" in mockSelf.event_callbacks
-    assert "sample-event" in mockSelf.event_callbacks["sample-subject"]
-    assert "callback-dummy" in mockSelf.event_callbacks["sample-subject"]["sample-event"]
-    mockSelf.create_channel.assert_called_once_with("sample-subject")
+    Messenger.on(mock_self, "sample-subject", "sample-event", "callback-dummy")
+    assert "sample-subject" in mock_self.event_callbacks
+    assert "sample-event" in mock_self.event_callbacks["sample-subject"]
+    assert "callback-dummy" in mock_self.event_callbacks["sample-subject"]["sample-event"]
+    mock_self.create_channel.assert_called_once_with("sample-subject")
 
     # Registered a local subject
     reset_scenario()
-    mockSelf.subjects = ["sample-subject"]
-    Messenger.on(mockSelf, "sample-subject", "sample-event", "callback-dummy")
-    mockSelf.create_channel.assert_not_called()
+    mock_self.subjects = ["sample-subject"]
+    Messenger.on(mock_self, "sample-subject", "sample-event", "callback-dummy")
+    mock_self.create_channel.assert_not_called()
 
     # Registered a global subject
     reset_scenario()
-    mockSelf.global_subjects = ["sample-subject"]
-    Messenger.on(mockSelf, "sample-subject", "sample-event", "callback-dummy")
-    mockSelf.create_channel.assert_not_called()
+    mock_self.global_subjects = ["sample-subject"]
+    Messenger.on(mock_self, "sample-subject", "sample-event", "callback-dummy")
+    mock_self.create_channel.assert_not_called()
 
 def test_messenger_bootstrap_tenants():
 
-    mockSelf = Mock(
+    mock_self = Mock(
         topic_manager=Mock(
             get_topic=Mock()
         ),
@@ -245,69 +246,69 @@ def test_messenger_bootstrap_tenants():
     )
 
     def reset_scenario():
-        mockSelf.topic_manager.get_topic.reset_mock()
-        mockSelf.topics = {}
-        mockSelf.consumer.subscribe.reset_mock()
-        mockSelf.consumer.start.reset_mock()
-        mockSelf.producer_topics = {}
+        mock_self.topic_manager.get_topic.reset_mock()
+        mock_self.topics = {}
+        mock_self.consumer.subscribe.reset_mock()
+        mock_self.consumer.start.reset_mock()
+        mock_self.producer_topics = {}
 
     # Happy day, non-global
-    mockSelf.topic_manager.get_topic.return_value = "dummy-topic"
-    Messenger._Messenger__bootstrap_tenants(mockSelf, "sample-subject", "sample-tenant", "rw")
-    mockSelf.topic_manager.get_topic.assert_called_once_with("sample-tenant", "sample-subject", False)
-    assert "dummy-topic" in mockSelf.topics
-    mockSelf.consumer.subscribe.assert_called_once_with("dummy-topic", ANY)
-    mockSelf.consumer.start.assert_called_once()
-    assert "sample-subject" in mockSelf.producer_topics
-    assert "sample-tenant" in mockSelf.producer_topics["sample-subject"]
+    mock_self.topic_manager.get_topic.return_value = "dummy-topic"
+    Messenger._Messenger__bootstrap_tenants(mock_self, "sample-subject", "sample-tenant", "rw")
+    mock_self.topic_manager.get_topic.assert_called_once_with("sample-tenant", "sample-subject", False)
+    assert "dummy-topic" in mock_self.topics
+    mock_self.consumer.subscribe.assert_called_once_with("dummy-topic", ANY)
+    mock_self.consumer.start.assert_called_once()
+    assert "sample-subject" in mock_self.producer_topics
+    assert "sample-tenant" in mock_self.producer_topics["sample-subject"]
 
     # Topic manager returned none
     reset_scenario()
-    mockSelf.topic_manager.get_topic.return_value = None
-    Messenger._Messenger__bootstrap_tenants(mockSelf, "sample-subject", "sample-tenant", "rw")
-    mockSelf.topic_manager.get_topic.assert_called_once_with("sample-tenant", "sample-subject", False)
-    assert "dummy-topic" not in mockSelf.topics
-    mockSelf.consumer.subscribe.assert_not_called()
-    mockSelf.consumer.start.assert_not_called()
-    assert "sample-subject" not in mockSelf.producer_topics
+    mock_self.topic_manager.get_topic.return_value = None
+    Messenger._Messenger__bootstrap_tenants(mock_self, "sample-subject", "sample-tenant", "rw")
+    mock_self.topic_manager.get_topic.assert_called_once_with("sample-tenant", "sample-subject", False)
+    assert "dummy-topic" not in mock_self.topics
+    mock_self.consumer.subscribe.assert_not_called()
+    mock_self.consumer.start.assert_not_called()
+    assert "sample-subject" not in mock_self.producer_topics
 
     # Already have such topic
     reset_scenario()
-    mockSelf.topics = ["dummy-topic"]
-    mockSelf.topic_manager.get_topic.return_value = "dummy-topic"
-    Messenger._Messenger__bootstrap_tenants(mockSelf, "sample-subject", "sample-tenant", "rw")
-    mockSelf.topic_manager.get_topic.assert_called_once_with("sample-tenant", "sample-subject", False)
-    mockSelf.consumer.subscribe.assert_not_called()
-    mockSelf.consumer.start.assert_not_called()
-    assert "sample-subject" not in mockSelf.producer_topics
+    mock_self.topics = ["dummy-topic"]
+    mock_self.topic_manager.get_topic.return_value = "dummy-topic"
+    Messenger._Messenger__bootstrap_tenants(mock_self, "sample-subject", "sample-tenant", "rw")
+    mock_self.topic_manager.get_topic.assert_called_once_with("sample-tenant", "sample-subject", False)
+    mock_self.consumer.subscribe.assert_not_called()
+    mock_self.consumer.start.assert_not_called()
+    assert "sample-subject" not in mock_self.producer_topics
 
 def test_messenger_process_kafka_messages():
-    mockSelf = Mock(
+    mock_self = Mock(
         emit=Mock(),
         topics={}
     )
 
     def reset_scenario():
-        mockSelf.emit.reset_mock()
-        mockSelf.topics={}
+        mock_self.emit.reset_mock()
+        mock_self.topics={}
 
     # Happy day
-    mockSelf.topics = {
+    mock_self.topics = {
         "sample-topic": {
             "subject": "sample-subject",
             "tenant": "sample-tenant"
         }
     }
-    Messenger._Messenger__process_kafka_messages(mockSelf, "sample-topic", "sample-message")
-    mockSelf.emit.assert_called_once_with("sample-subject", "sample-tenant", "message", "sample-message")
+    Messenger._Messenger__process_kafka_messages(mock_self, "sample-topic", "sample-message")
+    mock_self.emit.assert_called_once_with("sample-subject", "sample-tenant", "message", "sample-message")
 
     # No registered topic
     reset_scenario()
-    Messenger._Messenger__process_kafka_messages(mockSelf, "sample-topic", "sample-message")
-    mockSelf.emit.assert_not_called()
+    Messenger._Messenger__process_kafka_messages(mock_self, "sample-topic", "sample-message")
+    mock_self.emit.assert_not_called()
 
 def test_messenger_publish():
-    mockSelf = Mock(
+    mock_self = Mock(
         producer_topics={},
         producer=Mock(
             produce=Mock()
@@ -315,36 +316,36 @@ def test_messenger_publish():
     )
 
     def reset_scenario():
-        mockSelf.producer_topics={}
-        mockSelf.producer.produce.reset_mock()
+        mock_self.producer_topics={}
+        mock_self.producer.produce.reset_mock()
 
     # Happy day
-    mockSelf.producer_topics = {
+    mock_self.producer_topics = {
         "sample-subject": {
             "sample-tenant": "sample-topic"
         }
     }
-    Messenger.publish(mockSelf, "sample-subject", "sample-tenant", "sample-message")
-    mockSelf.producer.produce.assert_called_once_with("sample-topic", "sample-message")
+    Messenger.publish(mock_self, "sample-subject", "sample-tenant", "sample-message")
+    mock_self.producer.produce.assert_called_once_with("sample-topic", "sample-message")
 
     # No registered subject
     reset_scenario()
-    Messenger.publish(mockSelf, "sample-subject", "sample-tenant", "sample-message")
-    mockSelf.producer.produce.assert_not_called()
+    Messenger.publish(mock_self, "sample-subject", "sample-tenant", "sample-message")
+    mock_self.producer.produce.assert_not_called()
 
     # No registered tenant
-    mockSelf.producer_topics = {
+    mock_self.producer_topics = {
         "sample-subject": {
             "other-tenant": "sample-topic"
         }
     }
-    Messenger.publish(mockSelf, "sample-subject", "sample-tenant", "sample-message")
-    mockSelf.producer.produce.assert_not_called()
+    Messenger.publish(mock_self, "sample-subject", "sample-tenant", "sample-message")
+    mock_self.producer.produce.assert_not_called()
 
 
 
 def test_messenger_request_device():
-    mockSelf = Mock(
+    mock_self = Mock(
         config=Mock(
             device_manager={
                 "url": "http://sample-url",
@@ -376,19 +377,19 @@ def test_messenger_request_device():
     )
 
     def reset_scenario():
-        mockSelf.emit.reset_mock()
+        mock_self.emit.reset_mock()
 
     patchReqGet = patch("requests.get", return_value=mockResponse)
     patchSleep = patch("time.sleep")
 
     with patchSleep, patchReqGet as mockReqRequest:
-        Messenger.request_device(mockSelf, "sample-tenant")
+        Messenger.request_device(mock_self, "sample-tenant")
         mockReqRequest.assert_called_with("http://sample-url/device", headers={
             'authorization': "Bearer super-secret-token"
         })
 
-        mockSelf.emit.assert_any_call("devices-subject", "sample-tenant", "message", "{\"event\": \"create\", \"data\": \"device-1\"}")
-        mockSelf.emit.assert_any_call("devices-subject", "sample-tenant", "message", "{\"event\": \"create\", \"data\": \"device-2\"}")
+        mock_self.emit.assert_any_call("devices-subject", "sample-tenant", "message", "{\"event\": \"create\", \"data\": \"device-1\"}")
+        mock_self.emit.assert_any_call("devices-subject", "sample-tenant", "message", "{\"event\": \"create\", \"data\": \"device-2\"}")
 
     reset_scenario()
 
@@ -396,12 +397,12 @@ def test_messenger_request_device():
     patchReqGet = patch("requests.get", return_value=mockResponse)
 
     with patchSleep, patchReqGet as mockReqRequest:
-        Messenger.request_device(mockSelf, "sample-tenant")
+        Messenger.request_device(mock_self, "sample-tenant")
         mockReqRequest.assert_called_with("http://sample-url/device", headers={
             'authorization': "Bearer super-secret-token"
         })
 
-        mockSelf.emit.assert_not_called()
+        mock_self.emit.assert_not_called()
 
     reset_scenario()
 
@@ -426,26 +427,26 @@ def test_messenger_request_device():
     patchReqGet = patch("requests.get", side_effect=[mockResponse, mockResponse2])
 
     with patchSleep, patchReqGet as mockReqRequest:
-        Messenger.request_device(mockSelf, "sample-tenant")
+        Messenger.request_device(mock_self, "sample-tenant")
         mockReqRequest.assert_any_call("http://sample-url/device", headers={
             'authorization': "Bearer super-secret-token"
         })
         mockReqRequest.assert_any_call("http://sample-url/device?page_num=199", headers={
             'authorization': "Bearer super-secret-token"
         })
-        mockSelf.emit.assert_any_call("devices-subject", "sample-tenant", "message", "{\"event\": \"create\", \"data\": \"device-1\"}")
-        mockSelf.emit.assert_any_call("devices-subject", "sample-tenant", "message", "{\"event\": \"create\", \"data\": \"device-2\"}")
-        mockSelf.emit.assert_any_call("devices-subject", "sample-tenant", "message", "{\"event\": \"create\", \"data\": \"device-3\"}")
-        mockSelf.emit.assert_any_call("devices-subject", "sample-tenant", "message", "{\"event\": \"create\", \"data\": \"device-4\"}")
+        mock_self.emit.assert_any_call("devices-subject", "sample-tenant", "message", "{\"event\": \"create\", \"data\": \"device-1\"}")
+        mock_self.emit.assert_any_call("devices-subject", "sample-tenant", "message", "{\"event\": \"create\", \"data\": \"device-2\"}")
+        mock_self.emit.assert_any_call("devices-subject", "sample-tenant", "message", "{\"event\": \"create\", \"data\": \"device-3\"}")
+        mock_self.emit.assert_any_call("devices-subject", "sample-tenant", "message", "{\"event\": \"create\", \"data\": \"device-4\"}")
 
 
     def assert_exceptions(patchSleep, patchReqGet):
         with patchSleep, patchReqGet as mockReqRequest:
-            Messenger.request_device(mockSelf, "sample-tenant")
+            Messenger.request_device(mock_self, "sample-tenant")
             mockReqRequest.assert_any_call("http://sample-url/device", headers={
                 'authorization': "Bearer super-secret-token"
             })
-            mockSelf.emit.assert_not_called()
+            mock_self.emit.assert_not_called()
 
     reset_scenario()
     patchReqGet = patch("requests.get", side_effect=ConnectionError)
@@ -464,20 +465,47 @@ def test_messenger_request_device():
     assert_exceptions(patchSleep, patchReqGet)
 
 def test_messenger_generate_device_events():
-    mockSelf = Mock(
+    mock_self = Mock(
         tenants=["tenant-1", "tenant-2"],
         request_device=Mock()
     )
 
-    Messenger.generate_device_create_event_for_active_devices(mockSelf)
-    mockSelf.request_device.assert_any_call("tenant-1")
-    mockSelf.request_device.assert_any_call("tenant-2")
+    Messenger.generate_device_create_event_for_active_devices(mock_self)
+    mock_self.request_device.assert_any_call("tenant-1")
+    mock_self.request_device.assert_any_call("tenant-2")
 
 
 def test_messenger_shutdown():
-    mockSelf = Mock(
+    mock_self = Mock(
         consumer=Mock(stop=Mock())
     )
 
-    Messenger.shutdown(mockSelf)
-    mockSelf.consumer.stop.assert_called_once()
+    Messenger.shutdown(mock_self)
+    mock_self.consumer.stop.assert_called_once()
+
+
+def test_messenger_create_channel():
+    mock_self = Mock(
+        tenants=["sample-tenant-1", "sample-tenant-2"],
+        subjects={},
+        global_subjects={},
+        __bootstrap_tenants = Mock(),
+        config=Mock(
+            dojot={
+                "management": {
+                    "tenant": "sample-mgmt-tenant"
+                }
+            }
+        )
+    )
+
+    Messenger.create_channel(mock_self, "sample-subject", "r", False)
+    mock_self.__bootstrap_tenants.expect_called_with("sample-subject", "sample-tenant-1", "r", False)
+    mock_self.__bootstrap_tenants.expect_called_with("sample-subject", "sample-tenant-2", "r", False)
+    assert "sample-subject" in mock_self.subjects
+
+    mock_self.__bootstrap_tenants.reset_mock()
+    Messenger.create_channel(mock_self, "sample-subject", "r", True)
+    mock_self.__bootstrap_tenants.expect_called_with("sample-subject", "sample-mgmt-tenant", "r", True)
+    assert "sample-subject" in mock_self.global_subjects
+

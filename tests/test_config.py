@@ -1,3 +1,4 @@
+import os
 import pytest
 from dojot.module import Config
 
@@ -14,14 +15,16 @@ def assert_config_creation(data=None):
 def assert_kafka_config(config):
     assert "producer" in config.kafka
     assert "client.id" in config.kafka["producer"]
-    assert "metadata.broker.list" in config.kafka["producer"]
+    assert "bootstrap_servers" in config.kafka["producer"]
     assert "consumer" in config.kafka
-    assert "group.id" in config.kafka["consumer"]
-    assert "metadata.broker.list" in config.kafka["consumer"]
-    assert "poll_timeout" in config.kafka["consumer"]
+    assert "group_id" in config.kafka["consumer"]
+    assert "bootstrap_servers" in config.kafka["consumer"]
+    assert "poll_timeout" in config.kafka["dojot"]
 
 def assert_services_config(config):
     assert "url" in config.data_broker
+    assert "timeout_sleep" in config.data_broker
+    assert "connection_retries" in config.data_broker
     assert "url" in config.auth
     assert "timeout_sleep" in config.auth
     assert "connection_retries" in config.auth
@@ -71,19 +74,26 @@ def test_custom_config():
         "kafka": {
             "producer": {
                 "client.id":  "producer-id",
-                "metadata.broker.list": "kafka:9092",
+                "bootstrap_servers": ["kafka:9092"],
                 "extra-config-p": "extra-data-producer"
             },
             "consumer": {
                 "group.id":  "consumer-group",
-                "metadata.broker.list": "kafka:9092",
+                "bootstrap_servers": ["kafka:9092"],
                 "extra-config-c": "extra-data-consumer"
+            },
+            "dojot": {
+                "poll_timeout": 2000,
+                "subscription_holdoff": 2.5,
+                "extra-config-kafka-dojot": "extra"
             }
         }
     }
     services_data = {
         "data_broker" : {
             "url" : "localhost:8080",
+            "timeout_sleep": 5,
+            "connection_retries": 3,
             "extra-dbroker": "data-dbroker"
         },
         "auth": {
@@ -125,3 +135,76 @@ def test_custom_config():
     config = assert_config_creation(dojot_data)
     assert_default_config(config)
     assert_extra_dojot_config(config)
+
+
+def test_env_config():
+    os.environ["KAFKA_HOSTS"] = "local-kafka1:9092,local-kafka2:9092"
+    os.environ["DOJOT_KAFKA_SUBSCRIPTION_HOLDOFF"] = "1234"
+    os.environ["DOJOT_KAFKA_POLL_TIMEOUT"] = "4321"
+    os.environ["KAFKA_GROUP_ID"] = "local-kafka"
+    os.environ['DATA_BROKER_URL'] = "http://local-data-broker"
+    os.environ['DEVICE_MANAGER_URL'] = "http://local-device-manager"
+    os.environ['AUTH_URL'] = "http://local-auth"
+    os.environ['DOJOT_MANAGEMENT_USER'] = "local-mgmt"
+    os.environ['DOJOT_MANAGEMENT_TENANT'] = "local-tenant"
+    os.environ['DOJOT_SUBJECT_TENANCY'] = "dojot.local.tenancy"
+    os.environ['DOJOT_SUBJECT_DEVICES'] = "dojot.local.devices"
+    os.environ['DOJOT_SUBJECT_DEVICE_DATA'] = "dojot.local.data"
+
+    data = {
+        "kafka": {
+            "producer": {
+                "client.id":  "kafka",
+                "bootstrap_servers": ["local-kafka1:9092", "local-kafka2:9092"],
+                "compression.codec": "gzip",
+                "retry.backoff.ms": 200,
+                "message.send.max.retries": 10,
+                "socket.keepalive.enable": True,
+                "queue.buffering.max.messages": 100000,
+                "queue.buffering.max.ms": 1000,
+                "batch.num.messages": 1000000,
+                "dr_cb": True
+            },
+            "consumer": {
+                "group_id":  "local-kafka",
+                "bootstrap_servers": ["local-kafka1:9092", "local-kafka2:9092"],
+            },
+            "dojot": {
+                "poll_timeout": 4321,
+                "subscription_holdoff": 1234
+            }
+        },
+        "data_broker" : {
+            "url" : "http://local-data-broker",
+            "timeout_sleep": 5,
+            "connection_retries": 3,
+        },
+        "auth": {
+            "url": "http://local-auth",
+            "timeout_sleep": 5,
+            "connection_retries": 3
+        },
+        "device_manager": {
+            "url": "http://local-device-manager",
+            "timeout_sleep": 5,
+            "connection_retries": 3
+        },
+        "dojot": {
+            "management": {
+                "user" : "local-mgmt",
+                "tenant": "local-tenant"
+            },
+            "subjects": {
+                "tenancy": "dojot.local.tenancy",
+                "devices": "dojot.local.devices",
+                "device_data": "dojot.local.data"
+            }
+        }
+    }
+
+    config = assert_config_creation()
+    assert config.kafka == data["kafka"]
+    assert config.auth == data["auth"]
+    assert config.device_manager == data["device_manager"]
+    assert config.data_broker == data["data_broker"]
+    assert config.dojot == data["dojot"]
