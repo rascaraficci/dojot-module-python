@@ -508,4 +508,3 @@ def test_messenger_create_channel():
     Messenger.create_channel(mock_self, "sample-subject", "r", True)
     mock_self.__bootstrap_tenants.expect_called_with("sample-subject", "sample-mgmt-tenant", "r", True)
     assert "sample-subject" in mock_self.global_subjects
-
