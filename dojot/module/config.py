@@ -40,7 +40,8 @@ class Config:
                     },
                     "consumer": {
                         "group.id": "my-module",
-                        "metadata.broker.list": "kafka:9092"
+                        "metadata.broker.list": "kafka:9092",
+                        "poll_timeout": 2000
                     }
                 },
                 "data_broker" : {
@@ -70,12 +71,12 @@ class Config:
             }
 
         .. warning::
-        
+
             If set, the `dojot` section should be in sync with all other
             modules. Otherwise this module won't work properly.
 
         .. note::
-        
+
             The Kafka object is straight from librdkafka configuration,
             separated into producer and consumer subobjects. For more
             information about this configuration, you should check its
@@ -85,16 +86,22 @@ class Config:
         self.load_defaults()
         self.load_env()
         if config is not None:
-            if "kafka" in config: 
-                self.kafka = config["kafka"]
-            if "data_broker" in config: 
-                self.data_broker = config["data_broker"]
+            if "kafka" in config:
+                if "consumer" in config["kafka"]:
+                    self.kafka["consumer"] = {**self.kafka["consumer"] , **config["kafka"]["consumer"]}
+                if "producer" in config["kafka"]:
+                    self.kafka["producer"] = {**self.kafka["producer"] , **config["kafka"]["producer"]}
+            if "data_broker" in config:
+                self.data_broker = {**self.data_broker, **config["data_broker"]}
             if "device_manager" in config:
-                self.device_manager = config["device_manager"]
-            if "auth" in config: 
-                self.auth = config["auth"]
-            if "dojot" in config: 
-                self.dojot = config["dojot"]
+                self.device_manager = {**self.device_manager, **config["device_manager"]}
+            if "auth" in config:
+                self.auth = {**self.auth, **config["auth"]}
+            if "dojot" in config:
+                if "management" in config["dojot"]:
+                    self.dojot["management"] = {**self.dojot["management"], **config["dojot"]["management"]}
+                if "subjects" in config["dojot"]:
+                    self.dojot["subjects"] = {**self.dojot["subjects"], **config["dojot"]["subjects"]}
 
 
     def load_defaults(self):
@@ -118,6 +125,7 @@ class Config:
                 consumer:
                     group.id: "my-module"
                     metadata.broker.list: "kafka:9092"
+                    poll_timeout: 2000
             data_broker:
                 url: "http://data-broker"
             device_manager:
@@ -129,7 +137,7 @@ class Config:
                 timeout_sleep: 5
                 connection_retries: 3
             dojot:
-                management: 
+                management:
                     user: "dojot-management"
                     tenant: "dojot-management"
                 subjects:
@@ -137,15 +145,15 @@ class Config:
                     devices: "dojot.device-manager.device"
                     device_data: "device-data"
 
-        .. warning:: 
+        .. warning::
 
             Calling this function will overwrite any previously set
             configuration in the created object. Also setting any configuration
             *after* Kafka is started or any Messenger object is created will
             have no effect on them.
 
-        .. warning:: 
-        
+        .. warning::
+
             If set, the `dojot` section should be in sync with all other
             modules. Otherwise this module won't work properly.
 
@@ -165,7 +173,9 @@ class Config:
             },
             "consumer": {
                 "group.id": "my-module",
-                "metadata.broker.list": "kafka:9092"
+                "metadata.broker.list": "kafka:9092",
+                # particular to this library, not rd_kafka nor kafka itself
+                "poll_timeout": 2000
             }
         }
 
@@ -245,7 +255,7 @@ class Config:
 
         self.dojot["management"]["user"] = os.environ.get(
             'DOJOT_MANAGEMENT_USER', self.dojot["management"]["user"])
-    
+
         self.dojot["management"]["tenant"] = os.environ.get(
             'DOJOT_MANAGEMENT_TENANT', self.dojot["management"]["tenant"])
 

@@ -40,16 +40,16 @@ class Messenger:
 
         # Create a second channel using a particular subject ``device-status``
         messenger.create_channel("service-status", "w")
-        
+
         # Register callback to process incoming device data
         messenger.on(config.dojot['subjects']['device_data'], "message", rcv_msg)
 
         # Publish a message on ``service-status`` subject using ``dojot-management`` service.
         messenger.publish("service-status", config.dojot['dojot-management'], "service X is up")
-    
-    
-    And that's all. 
-    
+
+
+    And that's all.
+
     You can use an internal event publishing/subscribing mechanism in order to
     send events to other parts of the code (using ``messenger.on()`` and
     ``messenger.emit()`` functions) without actually send or receive any
@@ -60,7 +60,7 @@ class Messenger:
 
         messenger.on("extra-subject", "subject-event", lambda tenant, data: print("Message received ({}): {}", (tenant, data)))
         messenger.emit("extra-subject", "management-tenant", "subject-event", "message data")
-    
+
     """
     def __init__(self, name, config):
         self.config = config
@@ -95,7 +95,7 @@ class Messenger:
         subscribe to topics related to all configured subjects. That way the
         user can rely only on calling ``messenger.on()`` functions and therefore
         it will receive all messages from that subject related to different
-        tenants.    
+        tenants.
 
         :raises UserWarning: When the list of tenants cannot be retrieved.
         """
@@ -104,6 +104,7 @@ class Messenger:
         if ret_tenants is None:
             LOGGER.error("Cannot initialize messenger, as the list of tenants could not be retrieved.")
             LOGGER.error("Bailing out.")
+            self.shutdown()
             raise UserWarning("Cannot initialize messenger")
         LOGGER.info("Retrieved list of tenants")
         for ten in ret_tenants:
@@ -113,6 +114,9 @@ class Messenger:
             LOGGER.info("%s bootstrapped.", ten)
             LOGGER.debug("tenants: %s", self.tenants)
         LOGGER.info("Finished tenant boostrapping")
+
+    def shutdown(self):
+        self.consumer.stop()
 
     def process_new_tenant(self, tenant, msg):
         """
@@ -159,7 +163,7 @@ class Messenger:
         :param tenant: The tenant to be used when emitting this new event
         :type event: str
         :param event: The event to be emitted. This is a arbitrary string.
-            The module itself will emit only ``message`` events (seldomly 
+            The module itself will emit only ``message`` events (seldomly
             ``new-tenant`` also)
         :type data: dict
         :param data: The data to be emitted
@@ -212,9 +216,9 @@ class Messenger:
         :type mode: str
         :param mode: Channel type ("r" for only receiving messages, "w" for
             only sending messages, "rw" for receiving and sending messages)
-        
+
         :type is_global: bool
-        :param is_global: flag indicating whether this channel should be 
+        :param is_global: flag indicating whether this channel should be
             associated to a service or be global.
         """
 
@@ -246,7 +250,7 @@ class Messenger:
         :type mode: str
         :param mode: R/W channel mode (send only, receive only or both)
         :type is_global: bool
-        :param is_global: flag indicating whether this channel should be 
+        :param is_global: flag indicating whether this channel should be
             associated to a service or be global.
         """
 
@@ -272,11 +276,12 @@ class Messenger:
                 LOGGER.info("Telling consumer to subscribe to new topic")
                 self.consumer.subscribe(ret_topic, self.__process_kafka_messages)
                 if len(self.topics) == 1:
-                    LOGGER.debug("Starting consumer thread")
+                    LOGGER.info("Starting consumer thread...")
                     try:
                         self.consumer.start()
                     except RuntimeError as error:
                         LOGGER.info("Something went wrong while starting thread: %s", error)
+                    LOGGER.info("... consumer thread was successfully started.")
                 else:
                     LOGGER.debug("Consumer thread is already started")
 
@@ -385,7 +390,7 @@ class Messenger:
                             page_num = payload['pagination']['next_page']
 
                         LOGGER.debug("List of devices retrieved from the device-manager.")
-                    
+
                     retry_counter = 0
                 except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as connection_error:
                     LOGGER.warning(

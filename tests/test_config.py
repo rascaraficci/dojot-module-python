@@ -18,6 +18,7 @@ def assert_kafka_config(config):
     assert "consumer" in config.kafka
     assert "group.id" in config.kafka["consumer"]
     assert "metadata.broker.list" in config.kafka["consumer"]
+    assert "poll_timeout" in config.kafka["consumer"]
 
 def assert_services_config(config):
     assert "url" in config.data_broker
@@ -64,7 +65,7 @@ def assert_extra_dojot_config(config):
 def test_default_config():
     config = assert_config_creation()
     assert_default_config(config)
-    
+
 def test_custom_config():
     kafka_data = {
         "kafka": {
@@ -91,9 +92,9 @@ def test_custom_config():
             "connection_retries": 3,
             "extra-auth": "data-auth"
         },
-        "device_manager": { 
-            "url": "http://device-manager:5000", 
-            "timeout_sleep": 5, 
+        "device_manager": {
+            "url": "http://device-manager:5000",
+            "timeout_sleep": 5,
             "connection_retries": 3,
             "extra-device-manager": "data-device-manager"
         }
