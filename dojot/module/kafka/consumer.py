@@ -26,6 +26,8 @@ class Consumer(threading.Thread):
 
         :type config: Config
         :param config: The configuration object
+        :type name: str
+        :param name: A name for this consumer.
         """
         threading.Thread.__init__(self)
         self.name = name
