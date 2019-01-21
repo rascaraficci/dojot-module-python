@@ -55,3 +55,8 @@ def test_get_tenants():
         tenants = Auth.get_tenants(mock_self)
         mock_http_perform.assert_called_with("http://sample-url/admin/tenants", "123", 3, 1)
         assert tenants == "admin"
+    patch_http_perform = patch("dojot.module.HttpRequester.do_it", return_value=None)
+    with patch_http_perform as mock_http_perform:
+        tenants = Auth.get_tenants(mock_self)
+        mock_http_perform.assert_called_with("http://sample-url/admin/tenants", "123", 3, 1)
+        assert tenants is None
