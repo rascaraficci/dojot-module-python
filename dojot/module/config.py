@@ -261,9 +261,6 @@ class Config:
             bootstrap_servers = bootstrap_servers.split(',')
             self.kafka["producer"]["bootstrap_servers"] = bootstrap_servers
             self.kafka["consumer"]["bootstrap_servers"] = bootstrap_servers
-        else:
-            self.kafka["producer"]["bootstrap_servers"] = self.kafka["producer"]["bootstrap_servers"]
-            self.kafka["consumer"]["bootstrap_servers"] = self.kafka["consumer"]["bootstrap_servers"]
 
         self.kafka["dojot"]["subscription_holdoff"] = int(os.environ.get(
             'DOJOT_KAFKA_SUBSCRIPTION_HOLDOFF', self.kafka["dojot"]["subscription_holdoff"]))
