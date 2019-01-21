@@ -3,18 +3,21 @@ import requests
 import unittest
 from unittest.mock import patch, MagicMock, Mock, create_autospec
 from dojot.module.kafka import TopicManager
+from dojot.module import HttpRequester
 
 
 @patch("dojot.module.Auth")
 def test_topic_manager_init(patchAuth):
     config = Mock(data_broker={
-        "url": "http://sample-url"
+        "url": "http://sample-url",
+        "connection_retries": 5,
+        "timeout_sleep": 3
     })
-    topicManager = TopicManager(config)
-    assert topicManager.topics == {}
-    assert topicManager.tenants == []
-    assert topicManager.broker == "http://sample-url"
-    assert topicManager.auth is not None
+    topic_manager = TopicManager(config)
+    assert topic_manager.topics == {}
+    assert topic_manager.tenants == []
+    assert topic_manager.broker == "http://sample-url"
+    assert topic_manager.auth is not None
 
 
 def test_get_key():
@@ -22,42 +25,34 @@ def test_get_key():
     assert ret == "sample-tenant:sample-subject"
 
 def test_get_topic_ok():
-    mockAuth = Mock(get_access_token=Mock(return_value="sample-token"))
-    patchResponse = patch("requests.Response.json", return_value={"topic": "sample-topic"})
-    patchReqGet = patch("requests.get", return_value=requests.Response)
-    with patchResponse, patchReqGet as mockReqGet:
-        mockSelf = Mock(topics={}, broker="http://sample-broker", auth=mockAuth)
-        ret = TopicManager.get_topic(mockSelf, "sample-tenant", "sample-subject")
+    mock_auth = Mock(get_access_token=Mock(return_value="sample-token"))
+    patch_http_requester = patch("dojot.module.HttpRequester.do_it", return_value={"topic": "sample-topic"})
+    with patch_http_requester as mock_http_req:
+        mock_self = Mock(topics={}, broker="http://sample-broker", auth=mock_auth, retry_counter=1, timeout_sleep=2)
+        ret = TopicManager.get_topic(mock_self, "sample-tenant", "sample-subject")
         assert ret == "sample-topic"
-        mockReqGet.assert_called_once_with("http://sample-broker/topic/sample-subject",
-                                headers={"authorization": "Bearer sample-token"})
-        mockAuth.get_access_token.assert_called_once_with("sample-tenant")
+        mock_http_req.assert_called_once_with("http://sample-broker/topic/sample-subject", "sample-token", 1, 2)
 
 def test_get_topic_global():
-    mockAuth = Mock(get_access_token=Mock(return_value="sample-token-global"))
-    patchResponse = patch("requests.Response.json", return_value={"topic": "sample-topic-global"})
-    patchReqGet = patch("requests.get", return_value=requests.Response)
-    with patchResponse, patchReqGet as mockReqGet:
-        mockSelf = Mock(topics={}, broker="http://sample-broker", auth=mockAuth)
-        ret = TopicManager.get_topic(mockSelf, "sample-tenant", "sample-subject-global", "global")
+    mock_auth = Mock(get_access_token=Mock(return_value="sample-token-global"))
+    patch_http_requester = patch("dojot.module.HttpRequester.do_it", return_value={"topic": "sample-topic-global"})
+    with patch_http_requester as mock_http_req:
+        mock_self = Mock(topics={}, broker="http://sample-broker", auth=mock_auth, retry_counter=1, timeout_sleep=2)
+        ret = TopicManager.get_topic(mock_self, "sample-tenant", "sample-subject-global", "global")
         assert ret == "sample-topic-global"
-        mockReqGet.assert_called_once_with("http://sample-broker/topic/sample-subject-global?global=true",
-                                headers={"authorization": "Bearer sample-token-global"})
-        mockAuth.get_access_token.assert_called_once_with("sample-tenant")
+        mock_http_req.assert_called_once_with("http://sample-broker/topic/sample-subject-global?global=true", "sample-token-global", 1, 2)
 
 def test_get_topic_value_error():
-    mockAuth = Mock(get_access_token=Mock(return_value="sample-token-error"))
-    patchResponseJson = patch("requests.Response.json", side_effect=ValueError("nope"))
-    patchReqGet = patch("requests.get", return_value=requests.Response)
-    with patchResponseJson, patchReqGet as mockReqGet:
-        mockSelf = Mock(topics={}, broker="http://sample-broker", auth=mockAuth)
-        ret = TopicManager.get_topic(mockSelf, "sample-tenant", "sample-subject-error")
+    mock_auth = Mock(get_access_token=Mock(return_value="sample-token"))
+    patch_http_requester = patch("dojot.module.HttpRequester.do_it", return_value=None)
+    with patch_http_requester as mock_http_req:
+        mock_self = Mock(topics={}, broker="http://sample-broker", auth=mock_auth, retry_counter=1, timeout_sleep=2)
+        ret = TopicManager.get_topic(mock_self, "sample-tenant", "sample-subject")
         assert ret is None
-        mockReqGet.assert_called_once_with("http://sample-broker/topic/sample-subject-error",
-                                headers={"authorization": "Bearer sample-token-error"})
-        mockAuth.get_access_token.assert_called_once_with("sample-tenant")
+        mock_http_req.assert_called_once_with("http://sample-broker/topic/sample-subject", "sample-token", 1, 2)
+
 
 def test_get_topic_with_topic():
-    mockSelf = Mock(get_key=TopicManager.get_key, topics={"sample-tenant:sample-subject": "sample-stored-value"})
-    ret = TopicManager.get_topic(mockSelf, "sample-tenant", "sample-subject")
+    mock_self = Mock(get_key=TopicManager.get_key, topics={"sample-tenant:sample-subject": "sample-stored-value"})
+    ret = TopicManager.get_topic(mock_self, "sample-tenant", "sample-subject")
     assert ret == "sample-stored-value"
