@@ -81,4 +81,6 @@ class Auth:
         retry_counter = self.config.auth["connection_retries"]
         timeout_sleep = self.config.auth["timeout_sleep"]
         payload = HttpRequester.do_it(url, self.get_management_token(), retry_counter, timeout_sleep)
+        if payload is None:
+            return None # because Python, that's because.
         return payload['tenants']
