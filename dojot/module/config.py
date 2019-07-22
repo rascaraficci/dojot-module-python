@@ -185,7 +185,7 @@ class Config:
                 "dr_cb": True
             },
             "consumer": {
-                "group_id": "my-module",
+                "group_id": "my-module-python-2",
                 "bootstrap_servers": ["kafka:9092"],
             },
             "dojot": {

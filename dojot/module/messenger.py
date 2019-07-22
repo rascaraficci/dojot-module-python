@@ -6,6 +6,7 @@ import time
 import json
 import uuid
 import requests
+import copy  
 from .kafka import Producer
 from .kafka import TopicManager
 from .kafka import Consumer
@@ -97,7 +98,10 @@ class Messenger:
         # topics
         # These consumer MUST belong to a unique group because all consumer
         # SHOULD receive messages related to tenants.
-        self.consumer = Consumer(self.config, "dojot-module-"+ str(uuid.uuid4()))
+        groupID = "dojot-module-python-"+ str(uuid.uuid4())
+        configTenancy = copy.deepcopy(self.config)
+        configTenancy.kafka["consumer"]["group_id"] = groupID;
+        self.consumer = Consumer(configTenancy, groupID)
         LOGGER.debug("Creating consumer for tenancy messages...")
         self.create_channel(self.config.dojot['subjects']['tenancy'], "r", True)
         LOGGER.debug("... consumer for tenancy messages was successfully created.")
