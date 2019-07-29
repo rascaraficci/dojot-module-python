@@ -1,17 +1,17 @@
-"""
+'''
 Configuration data module
-"""
+'''
 
 import os
 
 class Config:
-    """
+    '''
     Main configuration class
 
     This class contains all needed configuration for this library
-    """
+    '''
     def __init__(self, config=None):
-        """
+        '''
         Config constructor
 
         :type config: dict or None
@@ -87,7 +87,7 @@ class Config:
             information about this configuration, you should check its
             documentation.
 
-        """
+        '''
         self.load_defaults()
         self.load_env()
         if config is not None:
@@ -112,7 +112,7 @@ class Config:
 
 
     def load_defaults(self):
-        """
+        '''
         Load default configuration, which is:
 
         .. code-block:: yaml
@@ -170,7 +170,7 @@ class Config:
             If set, the `dojot` section should be in sync with all other
             modules. Otherwise this module won't work properly.
 
-        """
+        '''
         self.kafka = {
             "producer": {
                 "client.id": "kafka",
@@ -185,7 +185,7 @@ class Config:
                 "dr_cb": True
             },
             "consumer": {
-                "group_id": "my-module",
+                "group_id": "my-module-python",
                 "bootstrap_servers": ["kafka:9092"],
             },
             "dojot": {
@@ -225,7 +225,7 @@ class Config:
         }
 
     def load_env(self):
-        """
+        '''
         Load configuration from environment variables.
 
         Any environment variable will overwrite the default configuration.
@@ -254,7 +254,7 @@ class Config:
         - ``DOJOT_SUBJECT_DEVICE_DATA``: Subject to be used when asking
           DataBroker for device data topics.
 
-        """
+        '''
 
         bootstrap_servers = os.environ.get('KAFKA_HOSTS', None)
         if bootstrap_servers:
