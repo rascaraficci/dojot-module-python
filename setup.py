@@ -35,7 +35,7 @@ setup(
     ],
     install_requires=[
         'requests==2.20.0',
-        'kafka-python==1.4.3',
+        'kafka-python==1.4.7',
         'colorlog==3.1.4'
     ],
     extras_require={
