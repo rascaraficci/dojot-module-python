@@ -12,7 +12,7 @@ with io.open('README.md', 'rt', encoding='utf8') as f:
 
 setup(
     name='dojot.module',
-    version='0.0.1a4',
+    version='0.0.1a5',
     url='http://github.com/dojot/dojot-module-python',
     project_urls=OrderedDict((
         ('Code', 'https://github.com/dojot/dojot-module-python.git'),
@@ -35,7 +35,7 @@ setup(
     ],
     install_requires=[
         'requests==2.20.0',
-        'kafka-python==1.4.3',
+        'kafka-python==1.4.7',
         'colorlog==3.1.4'
     ],
     extras_require={
