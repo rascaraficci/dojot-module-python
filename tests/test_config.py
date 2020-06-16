@@ -21,6 +21,18 @@ def assert_kafka_config(config):
     assert "bootstrap_servers" in config.kafka["consumer"]
     assert "poll_timeout" in config.kafka["dojot"]
 
+def assert_keycloak_config(config):
+    assert "timeout_sleep" in config.keycloak
+    assert "connection_retries" in config.keycloak
+    assert "base_path" in config.keycloak
+    assert "token_endpoint" in config.keycloak
+    assert "tenants_endpoint" in config.keycloak
+    assert "credentials" in config.keycloak
+    assert "username" in config.keycloak['credentials']
+    assert "password" in config.keycloak['credentials']
+    assert "client_id" in config.keycloak['credentials']
+    assert "grant_type" in config.keycloak['credentials']
+
 def assert_services_config(config):
     assert "url" in config.data_broker
     assert "timeout_sleep" in config.data_broker
@@ -44,6 +56,7 @@ def assert_dojot_config(config):
 
 def assert_default_config(config):
     assert_kafka_config(config)
+    assert_keycloak_config(config)
     assert_services_config(config)
     assert_dojot_config(config)
 
@@ -184,6 +197,19 @@ def test_env_config():
             "timeout_sleep": 5,
             "connection_retries": 3
         },
+        "keycloak":{
+            "timeout_sleep": 5,
+            "connection_retries": 3,
+            "base_path": "http://keycloak:8080/auth/",
+            "token_endpoint": "realms/master/protocol/openid-connect/token/",
+            "tenants_endpoint": "admin/realms/",
+            "credentials": {
+                "username" : "admin",
+                "password": "admin",
+                "client_id": "admin-cli",
+                "grant_type": "password",
+            }
+        },
         "device_manager": {
             "url": "http://local-device-manager",
             "timeout_sleep": 5,
@@ -208,3 +234,4 @@ def test_env_config():
     assert config.device_manager == data["device_manager"]
     assert config.data_broker == data["data_broker"]
     assert config.dojot == data["dojot"]
+    assert config.keycloak == data['keycloak']

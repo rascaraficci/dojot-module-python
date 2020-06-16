@@ -212,6 +212,20 @@ class Config:
             "connection_retries": 3
         }
 
+        self.keycloak = {
+            "timeout_sleep": 5,
+            "connection_retries": 3,
+            "base_path": "http://keycloak:8080/auth/",
+            "token_endpoint": "realms/master/protocol/openid-connect/token/",
+            "tenants_endpoint": "admin/realms/",
+            "credentials": {
+                "username": "admin",
+                "password": "admin",
+                "client_id": "admin-cli",
+                "grant_type": "password",
+            }
+        }
+
         self.dojot = {
             "management": {
                 "user" : "dojot-management",
