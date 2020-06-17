@@ -36,7 +36,7 @@ class Auth:
         """
 
         url = self.config.keycloak['base_path'] + \
-            self.config.keycloak['token_endpoint']
+            'realms/master/protocol/openid-connect/token'
 
         form_params = self.config.keycloak['credentials']
 
@@ -82,8 +82,7 @@ class Auth:
         :return: List of tenants
         """
 
-        url = self.config.keycloak["base_path"] + \
-            self.config.keycloak['tenants_endpoint']
+        url = self.config.keycloak["base_path"] + 'admin/realms'
         retry_counter = self.config.keycloak["connection_retries"]
         timeout_sleep = self.config.keycloak["timeout_sleep"]
         try:

@@ -11,7 +11,6 @@ def test_get_management_token_ok():
     config = Mock(
         keycloak={
             "base_path": "http://kc_base_path/",
-            "token_endpoint": "kc_token_endpoint/",
             "credentials": {
                 "username": "admin",
                 "password": "admin",
@@ -32,15 +31,15 @@ def test_get_management_token_ok():
     with patch_http_perform as mock_http_perform:
         token = Auth.get_management_token(mock_self)
         mock_http_perform.assert_called_with(
-            'http://kc_base_path/kc_token_endpoint/',
+            'http://kc_base_path/realms/master/protocol/openid-connect/token',
             data=mock_self.config.keycloak['credentials'])
         assert token == "xyz"
+
 
 def test_get_management_token_fail():
     config = Mock(
         keycloak={
             "base_path": "http://kc_base_path/",
-            "token_endpoint": "kc_token_endpoint/",
             "credentials": {
                 "username": "admin",
                 "password": "admin",
@@ -49,7 +48,7 @@ def test_get_management_token_fail():
             }
         }
     )
-    
+
     mock_self = Mock(config=config)
 
     patch_http_perform = patch("requests.post")
@@ -79,7 +78,6 @@ def test_get_tenants():
             "timeout_sleep": 1,
             "connection_retries": 3,
             "base_path": "http://kc_base_path/",
-            "tenants_endpoint": "keycloak_tenants_endpoint/",
             "credentials": {
                 "username": "admin",
                 "password": "admin",
@@ -105,15 +103,16 @@ def test_get_tenants():
     with patch_http_perform as mock_http_perform:
         tenants = Auth.get_tenants(mock_self)
         mock_http_perform.assert_called_with(
-            "http://kc_base_path/keycloak_tenants_endpoint/", "123", 3, 1)
+            "http://kc_base_path/admin/realms", "123", 3, 1)
         assert tenants[0] == "master"
     patch_http_perform = patch(
         "dojot.module.HttpRequester.do_it", return_value=None)
     with patch_http_perform as mock_http_perform:
         tenants = Auth.get_tenants(mock_self)
         mock_http_perform.assert_called_with(
-            "http://kc_base_path/keycloak_tenants_endpoint/", "123", 3, 1)
+            "http://kc_base_path/admin/realms", "123", 3, 1)
         assert tenants is None
+
 
 def test_get_tenants_fail():
     config = Mock(
@@ -137,7 +136,8 @@ def test_get_tenants_fail():
         }
     )
     mock_self = Mock(
-        get_management_token=Mock(side_effect=requests.exceptions.ConnectionError()),
+        get_management_token=Mock(
+            side_effect=requests.exceptions.ConnectionError()),
         config=config
     )
 

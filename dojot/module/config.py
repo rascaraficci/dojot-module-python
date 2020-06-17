@@ -57,10 +57,16 @@ class Config:
                     "timeout_sleep": 5,
                     "connection_retries": 3
                 },
-                "auth" : {
-                    "url": "http://auth:5000",
+                "keycloak" = {
                     "timeout_sleep": 5,
-                    "connection_retries": 3
+                    "connection_retries": 3,
+                    "base_path": "http://keycloak:8080/auth/",
+                    "credentials": {
+                        "username": "admin",
+                        "password": "admin",
+                        "client_id": "admin-cli",
+                        "grant_type": "password",
+                    }
                 },
                 "dojot" : {
                     "management": {
@@ -145,10 +151,15 @@ class Config:
                 url: "http://device-manager:5000"
                 "timeout_sleep": 5
                 "connection_retries": 3
-            auth:
-                url: "http://auth:5000"
-                timeout_sleep: 5
-                connection_retries: 3
+            keycloak:
+                "base_path": "http://keycloak:8080/auth"
+                "timeout_sleep": 5
+                "connection_retries": 3
+                "credentials": 
+                    "username": "admin",
+                    "password": "admin",
+                    "client_id": "admin-cli",
+                    "grant_type": "password"
             dojot:
                 management:
                     user: "dojot-management"
@@ -216,8 +227,6 @@ class Config:
             "timeout_sleep": 5,
             "connection_retries": 3,
             "base_path": "http://keycloak:8080/auth/",
-            "token_endpoint": "realms/master/protocol/openid-connect/token/",
-            "tenants_endpoint": "admin/realms/",
             "credentials": {
                 "username": "admin",
                 "password": "admin",
@@ -257,6 +266,9 @@ class Config:
         - ``DATA_BROKER_URL``: Where DataBroker service can be reached.
         - ``DEVICE_MANAGER_URL``: URL to reach the device-manager service.
         - ``AUTH_URL``: Where Auth service can be reached.
+        - ``KEYCLOAK_URL``: Where Keycloak service can be reached.
+        - ``KEYCLOAK_USER``: Keycloak user (this user must have permission to list realms).
+        - ``KEYCLOAK_PASSWORD``: Keycloak user password.
         - ``DOJOT_MANAGEMENT_TENANT``: tenant to be used when asking
           DataBroker for management topics (such as tenancy-related topics)
         - ``DOJOT_MANAGEMENT_USER``: user to be used when asking
@@ -292,6 +304,10 @@ class Config:
             'DEVICE_MANAGER_URL', self.device_manager["url"])
 
         self.auth["url"] = os.environ.get('AUTH_URL', self.auth["url"])
+
+        self.keycloak["base_path"] = os.environ.get("KEYCLOAK_URL", self.keycloak["base_path"])
+        self.keycloak["credentials"]["username"] = os.environ.get("KEYCLOAK_USER", self.keycloak["credentials"]["username"])
+        self.keycloak["credentials"]["password"] = os.environ.get("KEYCLOAK_PASSWORD", self.keycloak["credentials"]["password"])
 
         self.dojot["management"]["user"] = os.environ.get(
             'DOJOT_MANAGEMENT_USER', self.dojot["management"]["user"])

@@ -25,8 +25,6 @@ def assert_keycloak_config(config):
     assert "timeout_sleep" in config.keycloak
     assert "connection_retries" in config.keycloak
     assert "base_path" in config.keycloak
-    assert "token_endpoint" in config.keycloak
-    assert "tenants_endpoint" in config.keycloak
     assert "credentials" in config.keycloak
     assert "username" in config.keycloak['credentials']
     assert "password" in config.keycloak['credentials']
@@ -158,6 +156,9 @@ def test_env_config():
     os.environ['DATA_BROKER_URL'] = "http://local-data-broker"
     os.environ['DEVICE_MANAGER_URL'] = "http://local-device-manager"
     os.environ['AUTH_URL'] = "http://local-auth"
+    os.environ['KEYCLOAK_URL'] = "http://local-keycloak:8080/auth/"
+    os.environ['KEYCLOAK_USER'] = "sample-user"
+    os.environ['KEYCLOAK_PASSWORD'] = "sample-password"
     os.environ['DOJOT_MANAGEMENT_USER'] = "local-mgmt"
     os.environ['DOJOT_MANAGEMENT_TENANT'] = "local-tenant"
     os.environ['DOJOT_SUBJECT_TENANCY'] = "dojot.local.tenancy"
@@ -200,12 +201,10 @@ def test_env_config():
         "keycloak":{
             "timeout_sleep": 5,
             "connection_retries": 3,
-            "base_path": "http://keycloak:8080/auth/",
-            "token_endpoint": "realms/master/protocol/openid-connect/token/",
-            "tenants_endpoint": "admin/realms/",
+            "base_path": "http://local-keycloak:8080/auth/",
             "credentials": {
-                "username" : "admin",
-                "password": "admin",
+                "username" : "sample-user",
+                "password": "sample-password",
                 "client_id": "admin-cli",
                 "grant_type": "password",
             }
@@ -234,4 +233,4 @@ def test_env_config():
     assert config.device_manager == data["device_manager"]
     assert config.data_broker == data["data_broker"]
     assert config.dojot == data["dojot"]
-    assert config.keycloak == data['keycloak']
+    assert config.keycloak == data['keycloak'] 
